@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AED Marcenaria - ERP Logístico de Elite</title>
+    
+    <!-- ================= 1. BIBLIOTECAS E ESTILOS ================= -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <!-- Firebase v8 (Estabilidade Garantida) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hidden-view { display: none !important; }
+        #map-rastreio, #map-rota { height: 100%; min-height: 450px; border-radius: 1rem; z-index: 10; background-color: #f1f5f9; }
+        
+        /* Scrollbar Profissional */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animações e Feedback */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #ef4444; border-radius: 50%; width: 22px; height: 22px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .pulse-red { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Glassmorphism Sidebar */
+        .nav-active { background: #ef4444; color: white; box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="text-slate-900 flex h-screen overflow-hidden">
+
+    <!-- ================= 2. CONTROLE DE ACESSO (LOGIN) ================= -->
+    <div id="login-view" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950 p-4">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-600 via-slate-900 to-red-600"></div>
+            
+            <div class="w-24 h-24 mx-auto bg-slate-900 rounded-3xl flex items-center justify-center mb-6 shadow-2xl transform -rotate-3">
+                <span class="text-6xl font-black text-red-600 tracking-tighter">A</span>
+                <span class="text-6xl font-black text-white tracking-tighter">E</span>
+                <span class="text-6xl font-black text-red-600 tracking-tighter">D</span>
+            </div>
+            
+            <h1 class="text-2xl font-black text-slate-900 mb-1">LOGÍSTICA AED</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">Intelligence Operations</p>
+            
+            <form id="login-form" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">E-mail Corporativo</label>
+                    <input type="email" id="login-email" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Chave de Acesso</label>
+                    <input type="password" id="login-pass" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium">
+                </div>
+                
+                <button type="submit" id="btn-login" class="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-2xl font-black shadow-xl transition-all active:scale-95 flex justify-center items-center gap-2 mt-4 uppercase tracking-widest text-xs">
+                    <i class='bx bx-shield-quarter text-lg text-red-600'></i> Autenticar Sistema
+                </button>
+                <p id="login-error" class="text-red-500 text-[10px] text-center font-black h-4 mt-2 uppercase"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 3. PAINEL ADMINISTRATIVO (DIRETORIA) ================= -->
+    <div id="admin-view" class="hidden-view flex w-full h-full">
+        <!-- SIDEBAR -->
+        <aside class="w-72 bg-slate-950 text-white flex flex-col z-50 shadow-2xl flex-shrink-0 hidden lg:flex">
+            <div class="p-8 flex items-center gap-4 border-b border-slate-900">
+                <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg transform -skew-x-6">
+                    <span class="text-red-600 tracking-tighter">A</span><span class="text-slate-900 tracking-tighter">E</span><span class="text-red-600 tracking-tighter">D</span>
+                </div>
+                <div>
+                    <h2 class="font-black text-lg leading-none tracking-tight">AED ERP</h2>
+                    <p class="text-[9px] font-bold text-red-500 uppercase tracking-widest mt-1">Command Center</p>
+                </div>
+            </div>
+
+            <nav class="flex-grow p-6 space-y-2 overflow-y-auto">
+                <button onclick="nav('dashboard')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:text-white transition-all group" data-target="dashboard">
+                    <i class='bx bxs-dashboard text-2xl group-hover:scale-110 transition'></i> <span class="font-bold text-sm">Dashboard Central</span>
+                </button>
+                
+                <div class="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mt-8 mb-4 px-4">Logística & Estradas</div>
+                <button onclick="nav('cargas')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:text-white transition-all group" data-target="cargas">
+                    <i class='bx bx-package text-2xl group-hover:scale-110 transition'></i> <span class="font-bold text-sm">Romaneios (NFes)</span>
+                </button>
+                <button onclick="nav('rastreio')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:text-white transition-all group" data-target="rastreio">
+                    <i class='bx bx-satellite text-2xl group-hover:scale-110 transition'></i> <span class="font-bold text-sm">Rastreio Satelital</span>
+                </button>
+                <button onclick="nav('prospeccao')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-amber-500 bg-amber-500/5 border border-amber-500/20 hover:bg-amber-500/10 transition-all" data-target="prospeccao">
+                    <i class='bx bx-radar text-2xl animate-pulse'></i> <span class="font-bold text-sm uppercase">Radar de Vendas IA</span>
+                </button>
+                
+                <div class="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mt-8 mb-4 px-4">Patrimônio & Dados</div>
+                <button onclick="nav('clientes')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:text-white transition-all group" data-target="clientes">
+                    <i class='bx bxs-store text-2xl group-hover:scale-110 transition'></i> <span class="font-bold text-sm">Lojas da Base</span>
+                </button>
+                <button onclick="nav('frota')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:text-white transition-all group" data-target="frota">
+                    <i class='bx bxs-truck text-2xl group-hover:scale-110 transition'></i> <span class="font-bold text-sm">Frota Ativa</span>
+                </button>
+                <button onclick="nav('oficina')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:text-white transition-all group" data-target="oficina">
+                    <i class='bx bx-wrench text-2xl group-hover:scale-110 transition'></i> <span class="font-bold text-sm">Manutenção</span>
+                </button>
+            </nav>
+
+            <div class="p-6 border-t border-slate-900 bg-slate-950/50">
+                <button onclick="nav('config')" class="w-full flex items-center gap-3 p-3 rounded-xl text-slate-500 hover:text-white transition-all mb-4 text-xs font-bold">
+                    <i class='bx bx-cog'></i> Configurações de API
+                </button>
+                <button onclick="fazerLogout()" class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-black text-xs uppercase tracking-widest">
+                    <i class='bx bx-log-out'></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="flex-grow flex flex-col h-full overflow-hidden relative">
+            <header class="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center z-10">
+                <div class="flex items-center gap-4">
+                    <button class="lg:hidden text-2xl text-slate-600"><i class='bx bx-menu'></i></button>
+                    <h2 id="page-title" class="text-xl font-black text-slate-800 tracking-tight uppercase">Dashboard Operacional</h2>
+                </div>
+                <div class="flex items-center gap-5">
+                    <div class="text-right hidden sm:block">
+                        <p id="user-display" class="text-xs font-black text-slate-900 uppercase">Admin</p>
+                        <p class="text-[9px] font-bold text-red-600 uppercase tracking-widest">Gestor de Frota</p>
+                    </div>
+                    <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-200 shadow-inner">
+                        <i class='bx bxs-user text-2xl'></i>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-grow overflow-y-auto p-8 relative">
+                
+                <!-- DASHBOARD -->
+                <div id="view-dashboard" class="view-content space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-[6px] border-l-blue-600">
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Viagens em Curso</p>
+                            <h3 class="text-3xl font-black text-slate-800 mt-2" id="dash-cargas">0</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-[6px] border-l-green-600">
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Satélites Ativos</p>
+                            <h3 class="text-3xl font-black text-slate-800 mt-2" id="dash-gps-ativos">0</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-[6px] border-l-amber-500">
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Clientes na Base</p>
+                            <h3 class="text-3xl font-black text-slate-800 mt-2" id="dash-clientes">0</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-[6px] border-l-slate-900">
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Veículos Disponíveis</p>
+                            <h3 class="text-3xl font-black text-slate-800 mt-2" id="dash-frota">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-[2.5rem] p-12 text-center relative overflow-hidden shadow-2xl">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                        <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+                        <i class='bx bxs-ship text-7xl text-red-600 mb-6 drop-shadow-2xl'></i>
+                        <h3 class="text-3xl font-black text-white mb-4">LOGÍSTICA PREDITIVA AED</h3>
+                        <p class="text-slate-400 max-w-xl mx-auto mb-8 font-medium leading-relaxed">A plataforma cruza dados de GPS, notas fiscais ativas e sua carteira de clientes para gerar oportunidades reais de venda sem custo de frete.</p>
+                        <button onclick="nav('prospeccao')" class="bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 uppercase tracking-widest text-xs">
+                            Ativar Radar Inteligente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RADAR IA (SISTEMA DE LOGÍSTICA VERDADEIRO) -->
+                <div id="view-prospeccao" class="view-content hidden-view h-full flex flex-col gap-6">
+                    <div class="flex flex-col xl:flex-row gap-6 h-full">
+                        <div class="w-full xl:w-2/3 flex flex-col gap-6">
+                            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
+                                <h3 class="font-black text-slate-800 text-lg mb-2 flex items-center gap-3">
+                                    <span class="bg-amber-100 text-amber-600 w-10 h-10 rounded-xl flex items-center justify-center"><i class='bx bx-radar text-2xl'></i></span>
+                                    Configuração do Radar Logístico
+                                </h3>
+                                <p class="text-xs text-slate-500 mb-6 font-medium">O radar buscará os **SEUS CLIENTES** que estão geograficamente próximos à rota traçada pelo caminhão selecionado.</p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div class="md:col-span-2">
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Viatura em Operação Real</label>
+                                        <select id="radar-veiculo" class="w-full p-4 border-2 border-slate-100 rounded-2xl font-black text-slate-800 focus:border-amber-400 outline-none bg-slate-50 transition-all appearance-none" onchange="autoConfigurarRota()">
+                                            <option value="">-- Selecione o Veículo para Puxar Rota --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1">Origem (GPS)</label>
+                                        <input type="text" id="origem-rota" placeholder="Localização do Satélite..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-amber-400">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1">Destino Final (Despacho)</label>
+                                        <input type="text" id="destino-rota" placeholder="Último Ponto de Entrega..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-amber-400">
+                                    </div>
+                                </div>
+
+                                <button onclick="processarRadarLogistico()" id="btn-analisar-radar" class="w-full bg-slate-950 hover:bg-black text-amber-400 py-5 rounded-2xl font-black shadow-2xl transition-all active:scale-95 flex justify-center items-center gap-3 uppercase tracking-[0.2em] text-xs">
+                                    <i class='bx bx-trip text-xl'></i> Iniciar Mapeamento Geo-Referenciado
+                                </button>
+                            </div>
+
+                            <div class="flex-grow bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden min-h-[400px]">
+                                <div id="map-rota" class="w-full h-full"></div>
+                                <div id="map-rota-overlay" class="absolute inset-0 bg-slate-50/90 z-20 flex flex-col items-center justify-center text-center p-8 backdrop-blur-sm">
+                                    <div class="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6">
+                                        <i class='bx bx-map-pin text-4xl text-slate-300'></i>
+                                    </div>
+                                    <h4 class="font-black text-slate-800 text-xl mb-2 tracking-tight uppercase">Radar em Standby</h4>
+                                    <p class="text-slate-500 max-w-xs text-sm font-medium">Selecione um caminhão com romaneios ativos para ver a rota e os clientes no caminho.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LISTA DE CLIENTES NO PERCURSO -->
+                        <div class="w-full xl:w-1/3 bg-white rounded-[2rem] shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                            <div class="p-6 bg-slate-900 text-white flex justify-between items-center border-b-4 border-amber-500">
+                                <h3 class="font-black flex items-center gap-2 text-sm tracking-widest uppercase">
+                                    <i class='bx bxs-user-check text-amber-500 text-xl'></i> Clientes em Rota
+                                </h3>
+                                <span id="badge-radar" class="bg-amber-500 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full hidden">0 DETECTADOS</span>
+                            </div>
+                            <div id="lista-radar-base" class="p-6 flex-grow overflow-y-auto space-y-4 bg-slate-50">
+                                <div class="text-center py-24 opacity-30">
+                                    <i class='bx bx-scan text-7xl mb-4'></i>
+                                    <p class="text-xs font-black uppercase tracking-widest">Aguardando Varredura...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OUTRAS VIEWS (Cargas, Clientes, Frota...) -->
+                <div id="view-clientes" class="view-content hidden-view space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg uppercase tracking-tight">Base de Clientes AED</h3>
+                            <p class="text-xs text-slate-400 font-medium">Gerencie o destino das suas montagens e entregas.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="abrirModal('modal-cliente')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg flex items-center gap-2 transition-all">
+                                <i class='bx bx-plus-circle text-lg'></i> Cadastrar Loja
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-400 uppercase font-black text-[10px] tracking-widest border-b">
+                                <tr>
+                                    <th class="p-6">Identificação da Loja</th>
+                                    <th class="p-6">Contato/WhatsApp</th>
+                                    <th class="p-6">Região</th>
+                                    <th class="p-6 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-clientes" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIAGENS / CARGAS -->
+                <div id="view-cargas" class="view-content hidden-view space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 flex justify-between items-center">
+                        <h3 class="font-black text-slate-800 text-lg uppercase tracking-tight">Gerenciador de Romaneios</h3>
+                        <button onclick="abrirModalCarga()" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg flex items-center gap-2 transition-all">
+                            <i class='bx bx-rocket text-lg text-red-600'></i> Expedir Carga
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-400 uppercase font-black text-[10px] tracking-widest border-b">
+                                <tr>
+                                    <th class="p-6">Status/Data</th>
+                                    <th class="p-6">Alocação (Placa/Mot)</th>
+                                    <th class="p-6">Destinos Programados</th>
+                                    <th class="p-6 text-center">Gestão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-cargas" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CONFIGURAÇÕES DE API -->
+                <div id="view-config" class="view-content hidden-view max-w-2xl">
+                    <div class="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-200">
+                        <h3 class="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3"><i class='bx bx-shield-alt-2 text-red-600'></i> Cofre de Integrações</h3>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
+                                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Google Gemini IA (Cérebro Comercial)</label>
+                                <input type="password" id="gemini-key" placeholder="AIza..." class="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm focus:border-purple-500 outline-none transition-all">
+                            </div>
+                            
+                            <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
+                                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Google Maps SDK (Logística e Geo)</label>
+                                <input type="password" id="maps-key" placeholder="AIza..." class="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm focus:border-blue-500 outline-none transition-all">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
+                                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Cloudinary Name</label>
+                                    <input type="text" id="cloud-name" placeholder="dtx..." class="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm focus:border-cyan-500 outline-none transition-all">
+                                </div>
+                                <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
+                                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Upload Preset</label>
+                                    <input type="password" id="upload-preset" placeholder="aed_..." class="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm focus:border-cyan-500 outline-none transition-all">
+                                </div>
+                            </div>
+
+                            <button onclick="salvarConfiguracoes()" class="w-full bg-slate-900 hover:bg-black text-white py-5 rounded-2xl font-black shadow-2xl transition-all active:scale-95 uppercase tracking-widest text-xs mt-4">
+                                Criptografar e Salvar no Banco
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= 4. APP MOBILE MOTORISTA (INTERFACE SEGURA) ================= -->
+    <div id="motorista-view" class="hidden-view h-full flex flex-col bg-slate-950 text-white absolute inset-0 z-[60] overflow-y-auto">
+        <div class="p-8 flex justify-between items-center bg-slate-900/50 backdrop-blur-md sticky top-0 z-10 border-b border-slate-800">
+            <div>
+                <h2 class="font-black text-2xl text-red-600 tracking-tighter">AED LOG</h2>
+                <p class="text-[9px] text-slate-400 font-black uppercase tracking-widest">Motorista: <span id="mot-nome-display" class="text-white">...</span></p>
+            </div>
+            <button onclick="fazerLogout()" class="bg-slate-800 p-3 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                <i class='bx bx-log-out text-2xl'></i>
+            </button>
+        </div>
+        
+        <div class="flex-grow p-8 flex flex-col items-center pb-32">
+            <!-- STATUS DO SATÉLITE -->
+            <div id="status-escala" class="w-full max-w-md mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] text-center shadow-2xl flex flex-col items-center">
+                    <i class='bx bx-loader-alt bx-spin text-5xl text-amber-500 mb-4'></i>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Sincronizando Satélite...</p>
+                </div>
+            </div>
+
+            <!-- BOTÃO GPS CENTRAL -->
+            <div class="relative w-64 h-64 flex items-center justify-center mb-10">
+                <div id="gps-pulse" class="absolute inset-0 rounded-full bg-red-600/30 hidden pulse-red"></div>
+                <button id="btn-toggle-gps" onclick="toggleGPS()" class="w-52 h-52 bg-slate-900 border-[6px] border-slate-800 rounded-full flex flex-col items-center justify-center transition-all shadow-[0_0_50px_rgba(0,0,0,0.5)] active:scale-95 z-10 disabled:opacity-20" disabled>
+                    <i id="gps-icon" class='bx bx-navigation text-6xl text-slate-700 mb-2'></i>
+                    <span id="gps-text" class="text-[10px] font-black text-slate-700 uppercase tracking-widest text-center">Bloqueado</span>
+                </button>
+            </div>
+            
+            <div id="gps-status-msg" class="text-center px-4 mb-8"></div>
+
+            <div id="motorista-cargas-container" class="w-full max-w-md hidden space-y-6">
+                <div id="motorista-lista-cargas"></div>
+                
+                <div class="border-t border-slate-800 pt-8 mt-8">
+                    <button onclick="abrirModalOcorrencia()" class="w-full bg-slate-900 border border-slate-800 p-6 rounded-3xl flex items-center gap-5 shadow-xl transition-all active:scale-95 group">
+                        <div class="w-14 h-14 bg-amber-500 text-slate-950 rounded-2xl flex items-center justify-center group-hover:bg-amber-400 transition">
+                            <i class='bx bx-receipt text-3xl'></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-black text-white uppercase tracking-widest text-xs">Aviso de Estrada</p>
+                            <p class="text-[10px] text-slate-400 font-medium">Anexar recibos, pedágios ou avarias</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 5. MODAIS DE OPERAÇÃO ================= -->
+    
+    <!-- Modal IA Vendas (Personalizado com Clientes da Base) -->
+    <div id="modal-ia" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 p-6 text-white flex justify-between items-center border-b-4 border-amber-500">
+                <h3 class="font-black text-sm tracking-widest uppercase flex items-center gap-3"><i class='bx bx-brain text-amber-500 text-2xl'></i> Proposta IA Personalizada</h3>
+                <button onclick="fecharModal('modal-ia')" class="text-slate-400 hover:text-white transition-all"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <div class="p-8 overflow-y-auto">
+                <div class="bg-amber-50 border-2 border-amber-100 p-6 rounded-3xl mb-6 flex gap-5 items-start">
+                    <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-amber-600 text-3xl border border-amber-200">
+                        <i class='bx bxs-store'></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p id="ia-store-name" class="font-black text-slate-900 text-xl leading-tight mb-1">...</p>
+                        <p id="ia-store-address" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-4">...</p>
+                        <input type="text" id="ia-store-phone" placeholder="WhatsApp (Apenas números)" class="w-full p-4 text-sm border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-400 outline-none font-black text-slate-700 shadow-inner">
+                    </div>
+                </div>
+                
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Estratégia de Negociação:</label>
+                <select id="ia-contexto" class="w-full p-4 mb-6 border-2 border-slate-100 rounded-2xl text-xs font-black text-slate-800 focus:border-amber-400 outline-none bg-slate-50 transition-all appearance-none" onchange="gerarTextoIA()">
+                    <option value="frete_gratis">LOGÍSTICA: Aproveitar Rota (100% Isenção de Frete)</option>
+                    <option value="manutencao">MANUTENÇÃO: Técnico na região (Revisão Preventiva)</option>
+                    <option value="novo_projeto">VENDAS: Lançamento exclusivo para franqueados</option>
+                </select>
+                
+                <div class="relative">
+                    <textarea id="ia-texto" class="w-full h-48 p-6 border-2 border-slate-100 rounded-3xl text-sm font-medium resize-none outline-none focus:border-amber-400 leading-relaxed text-slate-700 bg-slate-50 shadow-inner" spellcheck="false"></textarea>
+                    <div id="ia-loading" class="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center hidden rounded-3xl">
+                        <div class="loader mb-3 !border-t-amber-500"></div>
+                        <p class="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] animate-pulse">IA está redigindo o pitch...</p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex gap-4">
+                    <button onclick="gerarTextoIA()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-4 text-xs font-black text-slate-600 rounded-2xl transition-all uppercase tracking-widest">
+                        <i class='bx bx-refresh'></i> Recriar
+                    </button>
+                    <button onclick="enviarWpp()" class="flex-[2] bg-green-600 hover:bg-green-700 text-white py-4 text-xs font-black rounded-2xl flex justify-center gap-3 items-center shadow-xl transition-all active:scale-95 uppercase tracking-widest">
+                        <i class='bx bxl-whatsapp text-2xl'></i> Disparar WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais Genéricos (Carga, Cliente, Ocorrência) -->
+    <div id="modal-carga" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-8 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-slate-900 text-lg uppercase tracking-tight">Expedir Novo Romaneio</h3>
+                <button onclick="fecharModal('modal-carga')" class="text-slate-400 hover:text-red-600 transition-all"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <form id="form-carga" class="p-8 space-y-5 overflow-y-auto max-h-[75vh]">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Caminhão</label>
+                        <select id="carga-veiculo" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Motorista</label>
+                        <select id="carga-motorista" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none"></select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Ponto de Descarga (Cliente Base)</label>
+                    <select id="carga-cliente" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Número da NFe</label>
+                    <input type="text" id="carga-nfe" placeholder="Ex: 12345" required class="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Descrição da Mercadoria</label>
+                    <textarea id="carga-desc" placeholder="Ex: 4 módulos de balcão..." rows="2" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm outline-none resize-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white p-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all mt-4">Lançar Viagem</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro Cliente -->
+    <div id="modal-cliente" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-8 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-slate-900 text-lg uppercase tracking-tight">Adicionar Loja à Base</h3>
+                <button onclick="fecharModal('modal-cliente')" class="text-slate-400 hover:text-red-600 transition-all"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <form id="form-cliente" class="p-8 space-y-4">
+                <input type="text" id="cli-nome" placeholder="Nome Comercial da Loja" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-red-500">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="cli-tel" placeholder="WhatsApp (Com DDD)" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none">
+                    <input type="text" id="cli-cidade" placeholder="Cidade e Estado (UF)" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none">
+                </div>
+                <input type="text" id="cli-end" placeholder="Endereço Completo (Para Geocodificação)" required class="w-full p-4 border border-slate-200 rounded-2xl text-sm font-bold outline-none">
+                <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white p-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all mt-4">Registrar na Base Global</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ocorrência Motorista -->
+    <div id="modal-ocorrencia" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-8 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-black text-white text-lg uppercase tracking-widest">Reportar Evento</h3>
+                <button onclick="fecharModal('modal-ocorrencia')" class="text-slate-500 hover:text-white transition-all"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <form id="form-ocorrencia" class="p-8 space-y-6">
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Tipo de Registro</label>
+                    <select id="oco-tipo" required class="w-full p-4 bg-slate-950 border border-slate-700 rounded-2xl text-white font-black text-xs outline-none focus:border-amber-500">
+                        <option value="Combustível">Abastecimento (Diesel)</option>
+                        <option value="Pedágio">Custo de Pedágio</option>
+                        <option value="Manutenção">Emergência Mecânica</option>
+                        <option value="Alimentação">Refeição/Diária</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Valor Total (R$)</label>
+                    <input type="number" step="0.01" id="oco-valor" placeholder="0.00" class="w-full p-5 bg-slate-950 border border-slate-700 rounded-2xl text-amber-500 font-black text-3xl outline-none text-center">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Capturar Foto do Recibo</label>
+                    <input type="file" id="oco-foto" accept="image/*" capture="environment" class="w-full text-xs text-slate-400 file:mr-4 file:py-3 file:px-6 file:rounded-2xl file:border-0 file:text-[10px] file:font-black file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-all cursor-pointer">
+                </div>
+                <textarea id="oco-desc" placeholder="Descreva o local ou motivo..." rows="2" required class="w-full p-4 bg-slate-950 border border-slate-700 rounded-2xl text-white text-sm outline-none resize-none"></textarea>
+                <button type="submit" id="btn-salvar-ocorrencia" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 p-5 rounded-2xl font-black uppercase tracking-widest shadow-[0_0_30px_rgba(217,119,6,0.3)] transition-all active:scale-95">Enviar para Auditoria</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 6. CÉREBRO DO SISTEMA (JS INTEGRAL) ================= -->
+    <script>
+        // --- 1. CONFIGURAÇÃO FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuqKgLVpDYqdTxKKnFO6Ns6rptM8YKqn0",
+            authDomain: "aed-log.firebaseapp.com",
+            databaseURL: "https://aed-log-default-rtdb.firebaseio.com",
+            projectId: "aed-log",
+            storageBucket: "aed-log.firebasestorage.app",
+            messagingSenderId: "274943213765",
+            appId: "1:274943213765:web:981162ad21a58c220970ac"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+        const auth = firebase.auth();
+        const DB_ROOT = 'aed_data_empresa';
+
+        // Variáveis de Controle
+        let currentUser = null; let currentUserRole = null;
+        let GEMINI_API_KEY = ""; let GOOGLE_MAPS_KEY = "";
+        let CLOUDINARY_CLOUD_NAME = ""; let CLOUDINARY_UPLOAD_PRESET = "";
+        let mapsLoaded = false; let mapRotaObj = null;
+        let directionsService = null; let directionsRenderer = null;
+        let activePlaceDetails = null; let routeMarkers = [];
+
+        // --- 2. GESTÃO DE ACESSO ---
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('login-error');
+            msg.innerText = "Sincronizando Base...";
+            try {
+                await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-pass').value);
+            } catch (err) {
+                msg.innerText = "Credenciais Inválidas.";
+            }
+        };
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const snap = await db.ref(`users_roles/${user.uid}`).once('value');
+                let role = snap.exists() ? snap.val().role : 'motorista';
+                if (user.email === 'admin@aed.com' || user.email === 'aed@aed.com') role = 'gestor';
+                rotear(user, role);
+            }
+        });
+
+        function rotear(user, role) {
+            currentUser = user; currentUserRole = role;
+            document.getElementById('login-view').classList.add('hidden-view');
+            carregarConfiguracoes();
+            if (role === 'gestor') {
+                document.getElementById('admin-view').classList.remove('hidden-view');
+                carregarDadosGestor();
+                nav('dashboard');
+            } else {
+                document.getElementById('motorista-view').classList.remove('hidden-view');
+                document.getElementById('mot-nome-display').innerText = user.email.split('@')[0];
+                iniciarAppMotorista();
+            }
+        }
+
+        function fazerLogout() { auth.signOut().then(() => window.location.reload()); }
+
+        function carregarConfiguracoes() {
+            db.ref(`${DB_ROOT}/config`).once('value', snap => {
+                if (snap.exists()) {
+                    const c = snap.val();
+                    GEMINI_API_KEY = c.gemini_key || ""; GOOGLE_MAPS_KEY = c.maps_key || "";
+                    CLOUDINARY_CLOUD_NAME = c.cloud_name || ""; CLOUDINARY_UPLOAD_PRESET = c.upload_preset || "";
+                    if(document.getElementById('gemini-key')) document.getElementById('gemini-key').value = GEMINI_API_KEY;
+                    if(document.getElementById('maps-key')) document.getElementById('maps-key').value = GOOGLE_MAPS_KEY;
+                    if(document.getElementById('cloud-name')) document.getElementById('cloud-name').value = CLOUDINARY_CLOUD_NAME;
+                    if(document.getElementById('upload-preset')) document.getElementById('upload-preset').value = CLOUDINARY_UPLOAD_PRESET;
+                    if (GOOGLE_MAPS_KEY && !mapsLoaded) carregarGoogleMaps();
+                }
+            });
+        }
+
+        function salvarConfiguracoes() {
+            db.ref(`${DB_ROOT}/config`).update({
+                gemini_key: document.getElementById('gemini-key').value,
+                maps_key: document.getElementById('maps-key').value,
+                cloud_name: document.getElementById('cloud-name').value,
+                upload_preset: document.getElementById('upload-preset').value
+            }).then(() => { alert("Configurações Salvas com Sucesso!"); window.location.reload(); });
+        }
+
+        // --- 3. LOGÍSTICA E MAPAS (O CORE DO SISTEMA) ---
+        function carregarGoogleMaps() {
+            if (mapsLoaded) return;
+            window.initMap = () => { mapsLoaded = true; checkMapInit(); };
+            const s = document.createElement('script');
+            s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places,geometry&callback=initMap`;
+            s.async = true; document.head.appendChild(s);
+        }
+
+        function checkMapInit() {
+            if (!mapsLoaded) return;
+            const routeView = document.getElementById('view-prospeccao');
+            if (!routeView.classList.contains('hidden-view')) {
+                document.getElementById('map-rota-overlay').classList.add('hidden');
+                if (!mapRotaObj) {
+                    mapRotaObj = new google.maps.Map(document.getElementById('map-rota'), { center: { lat: -20.8, lng: -49.3 }, zoom: 6, disableDefaultUI: true });
+                    directionsService = new google.maps.DirectionsService();
+                    directionsRenderer = new google.maps.DirectionsRenderer({ map: mapRotaObj, polylineOptions: { strokeColor: "#0f172a", strokeOpacity: 0.8, strokeWeight: 6 } });
+                }
+            }
+        }
+
+        function nav(target) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active', 'bg-amber-500/20'));
+            const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+            if(btn) {
+                if(target === 'prospeccao') btn.classList.add('bg-amber-500/20');
+                else btn.classList.add('nav-active');
+            }
+            document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden-view'));
+            document.getElementById(`view-${target}`).classList.remove('hidden-view');
+            
+            const titles = { 'dashboard': 'Dashboard Operacional', 'cargas': 'Gestão de Romaneios', 'rastreio': 'Monitoramento Satelital', 'prospeccao': 'Radar de Vendas IA', 'clientes': 'Base de Dados de Lojas', 'frota': 'Frota Logística', 'oficina': 'Manutenção de Ativos', 'config': 'Configurações de Elite' };
+            document.getElementById('page-title').innerText = titles[target] || 'AED Logística';
+            
+            if (target === 'prospeccao') {
+                checkMapInit();
+                popularCaminhoesRadar();
+            }
+        }
+
+        // --- 4. RADAR LOGÍSTICO (CRUZAMENTO DE DADOS) ---
+        async function popularCaminhoesRadar() {
+            const snap = await db.ref(`${DB_ROOT}/frota`).orderByChild('status').equalTo('Em Rota').once('value');
+            let h = '<option value="">-- Selecione o Caminhão Ativo para Mapear Rota --</option>';
+            if (snap.exists()) {
+                snap.forEach(f => { h += `<option value="${f.val().placa}">Viatura: ${f.val().placa} (Em Operação)</option>`; });
+            }
+            document.getElementById('radar-veiculo').innerHTML = h;
+        }
+
+        async function autoConfigurarRota() {
+            const placa = document.getElementById('radar-veiculo').value;
+            if (!placa) return;
+
+            document.getElementById('origem-rota').value = "Puxando GPS Satélite...";
+            document.getElementById('destino-rota').value = "Consultando Romaneios...";
+
+            // 1. Pega GPS Atual
+            const gpsSnap = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
+            if (gpsSnap.exists() && gpsSnap.val().status === 'online') {
+                document.getElementById('origem-rota').value = `${gpsSnap.val().lat}, ${gpsSnap.val().lng}`;
+            } else {
+                document.getElementById('origem-rota').value = "São José do Rio Preto, SP"; // Fallback Sede
+            }
+
+            // 2. Pega Destinos Pendentes
+            const cargasSnap = await db.ref(`${DB_ROOT}/cargas`).orderByChild('veiculo').equalTo(placa).once('value');
+            let destinos = [];
+            if (cargasSnap.exists()) {
+                cargasSnap.forEach(c => { if(c.val().status === 'Em Rota') destinos.push(c.val().destino); });
+            }
+
+            if (destinos.length > 0) {
+                document.getElementById('destino-rota').value = destinos[destinos.length - 1];
+                document.getElementById('destino-rota').dataset.way = JSON.stringify(destinos.slice(0, -1));
+            } else {
+                document.getElementById('destino-rota').value = "Sem cargas ativas.";
+            }
+        }
+
+        async function processarRadarLogistico() {
+            const org = document.getElementById('origem-rota').value;
+            const dst = document.getElementById('destino-rota').value;
+            const btn = document.getElementById('btn-analisar-radar');
+
+            if (!org || !dst || !directionsService) return alert("Erro: Rota ou Mapas indisponíveis.");
+
+            btn.innerHTML = "<div class='loader !border-t-amber-400 mx-auto'></div> Mapeando Rodovias...";
+            routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
+
+            let waypoints = [];
+            const ways = document.getElementById('destino-rota').dataset.way;
+            if (ways) {
+                JSON.parse(ways).forEach(w => waypoints.push({ location: w, stopover: true }));
+            }
+
+            directionsService.route({ origin: org, destination: dst, waypoints: waypoints, travelMode: 'DRIVING' }, async (res, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(res);
+                    const polyline = new google.maps.Polyline({ path: res.routes[0].overview_path });
+
+                    // Busca Clientes Internos
+                    const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
+                    const geocoder = new google.maps.Geocoder();
+                    let detectados = [];
+                    let processados = 0;
+                    let total = 0;
+
+                    if (!clSnap.exists()) {
+                        btn.innerHTML = "Radar Finalizado (0 Clientes)";
+                        document.getElementById('lista-radar-base').innerHTML = "<p class='text-center py-10 font-bold'>Base Vazia.</p>";
+                        return;
+                    }
+
+                    clSnap.forEach(() => total++);
+                    btn.innerHTML = `<div class='loader !border-t-amber-400'></div> Cruzando Base (${total})...`;
+
+                    clSnap.forEach(snap => {
+                        const cli = snap.val();
+                        geocoder.geocode({ address: `${cli.end}, ${cli.cid}` }, (geoRes, geoStat) => {
+                            processados++;
+                            if (geoStat === 'OK') {
+                                const loc = geoRes[0].geometry.location;
+                                // Tolerância de ~25km da rodovia (0.25)
+                                if (google.maps.geometry.poly.isLocationOnEdge(loc, polyline, 0.25)) {
+                                    cli.location = loc;
+                                    cli.full_addr = geoRes[0].formatted_address;
+                                    detectados.push(cli);
+                                }
+                            }
+
+                            if (processados === total) {
+                                btn.innerHTML = "<i class='bx bx-check-circle'></i> Radar de Base Concluído";
+                                renderizarRadarBase(detectados);
+                            }
+                        });
+                    });
+
+                } else {
+                    alert("Google recusou a rota: " + status);
+                    btn.innerHTML = "<i class='bx bx-error'></i> Erro na Rota";
+                }
+            });
+        }
+
+        function renderizarRadarBase(clientes) {
+            const list = document.getElementById('lista-radar-base');
+            const badge = document.getElementById('badge-radar');
+            badge.innerText = `${clientes.length} DETECTADOS`;
+            badge.classList.remove('hidden');
+
+            if (clientes.length === 0) {
+                list.innerHTML = "<div class='text-center py-20 opacity-30'><p class='font-black'>NENHUM CLIENTE BASE NO TRAJETO.</p></div>";
+                return;
+            }
+
+            let html = '';
+            clientes.forEach(c => {
+                const marker = new google.maps.Marker({ position: c.location, map: mapRotaObj, icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png" });
+                routeMarkers.push(marker);
+
+                html += `
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm card-hover relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-black text-slate-900 text-sm uppercase">${c.nome}</h4>
+                        <span class="bg-amber-100 text-amber-600 text-[8px] font-black px-2 py-0.5 rounded uppercase">Em Rota</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-medium mb-4 leading-relaxed"><i class='bx bx-map text-red-500'></i> ${c.cid}</p>
+                    <button onclick="abrirPitchIA('${c.nome.replace(/'/g,"")}','${c.cid.replace(/'/g,"")}','${c.tel}')" class="w-full bg-slate-900 text-amber-500 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-black">
+                        Abrir Negociação IA
+                    </button>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        // --- 5. PITCH IA COMERCIAL ---
+        function abrirPitchIA(nome, local, tel) {
+            activePlaceDetails = { name: nome, address: local, phone: tel.replace(/\D/g, '') };
+            document.getElementById('ia-store-name').innerText = nome;
+            document.getElementById('ia-store-address').innerText = local;
+            document.getElementById('ia-store-phone').value = activePlaceDetails.phone.startsWith('55') ? activePlaceDetails.phone : '55'+activePlaceDetails.phone;
+            abrirModal('modal-ia');
+            gerarTextoIA();
+        }
+
+        async function gerarTextoIA() {
+            const txt = document.getElementById('ia-texto');
+            const load = document.getElementById('ia-loading');
+            if (!GEMINI_API_KEY) return txt.value = "Configure a API Key no Cofre.";
+            
+            load.classList.remove('hidden');
+            const ctx = document.getElementById('ia-contexto').options[document.getElementById('ia-contexto').selectedIndex].text;
+            
+            const prompt = `Aja como o Head de Logística da AED Marcenaria. Escreva uma mensagem de WhatsApp curta e impactante para o cliente base "${activePlaceDetails.name}" em "${activePlaceDetails.address}". 
+            Contexto: Um de nossos caminhões está em rota e passará pela região dele. Estamos oferecendo o benefício: "${ctx}". 
+            Gatilho: Isenção de frete por aproveitamento de rota. Tom: Profissional, amigável e focado em benefício imediato. Máximo 3 emojis. Encerre com pergunta aberta.`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const d = await res.json();
+                txt.value = d.candidates[0].content.parts[0].text;
+            } catch (e) { txt.value = "Erro ao conectar com a IA."; } finally { load.classList.add('hidden'); }
+        }
+
+        function enviarWpp() {
+            const n = document.getElementById('ia-store-phone').value;
+            const t = document.getElementById('ia-texto').value;
+            window.open(`https://wa.me/${n}?text=${encodeURIComponent(t)}`, '_blank');
+        }
+
+        // --- 6. GESTÃO ADMINISTRATIVA ---
+        function carregarDadosGestor() {
+            // Clientes
+            db.ref(`${DB_ROOT}/clientes`).on('value', snap => {
+                let h = ''; let count = 0;
+                snap.forEach(c => {
+                    count++; const d = c.val();
+                    h += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-6 font-black text-slate-800">${d.nome}</td><td class="p-6 font-bold text-slate-600">${d.tel}</td><td class="p-6 text-slate-500 text-xs font-medium">${d.cid}</td><td class="p-6 text-center"><button onclick="remover('${c.key}','clientes')" class="text-slate-300 hover:text-red-600 transition-all"><i class='bx bx-trash text-xl'></i></button></td></tr>`;
+                });
+                document.getElementById('lista-clientes').innerHTML = h;
+                document.getElementById('dash-clientes').innerText = count;
+            });
+
+            // Cargas
+            db.ref(`${DB_ROOT}/cargas`).on('value', snap => {
+                let h = ''; let ativos = 0;
+                snap.forEach(c => {
+                    const d = c.val(); if(d.status === 'Em Rota') ativos++;
+                    const stColor = d.status === 'Entregue' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
+                    h += `<tr class="border-b hover:bg-slate-50 transition"><td class="p-6"><span class="px-3 py-1 rounded-lg font-black text-[10px] uppercase ${stColor}">${d.status}</span></td><td class="p-6 font-black text-slate-800 tracking-wider">${d.veiculo}<br><span class="text-[9px] text-red-500 uppercase">${d.motorista_nome || 'S/N'}</span></td><td class="p-6 font-bold text-slate-700"><i class='bx bxs-map text-red-500'></i> ${d.destino}<br><span class="text-[9px] text-slate-400">NFe: ${d.nfe}</span></td><td class="p-6 text-center"><button onclick="remover('${c.key}','cargas')" class="text-slate-300 hover:text-red-600 transition-all"><i class='bx bx-trash text-xl'></i></button></td></tr>`;
+                });
+                document.getElementById('lista-cargas').innerHTML = h;
+                document.getElementById('dash-cargas').innerText = ativos;
+            });
+
+            // Frota
+            db.ref(`${DB_ROOT}/frota`).on('value', snap => {
+                let count = 0; snap.forEach(f => { if(f.val().status === 'Disponível') count++; });
+                document.getElementById('dash-frota').innerText = count;
+            });
+
+            // GPS Rastreio
+            db.ref(`${DB_ROOT}/gps_tracking`).on('value', snap => {
+                let ativos = 0; snap.forEach(g => { if(g.val().status === 'online') ativos++; });
+                document.getElementById('dash-gps-ativos').innerText = ativos;
+            });
+        }
+
+        // Submits Admin
+        document.getElementById('form-cliente').onsubmit = (e) => {
+            e.preventDefault();
+            db.ref(`${DB_ROOT}/clientes`).push({ nome: document.getElementById('cli-nome').value, tel: document.getElementById('cli-tel').value, cid: document.getElementById('cli-cidade').value, end: document.getElementById('cli-end').value });
+            fecharModal('modal-cliente'); e.target.reset();
+        };
+
+        window.abrirModalCarga = () => {
+            db.ref(`${DB_ROOT}/frota`).once('value', s => { let h = ''; s.forEach(f => h += `<option value="${f.val().placa}">${f.val().placa}</option>`); document.getElementById('carga-veiculo').innerHTML = h; });
+            db.ref(`${DB_ROOT}/equipe`).once('value', s => { let h = ''; s.forEach(e => { if(e.val().cargo === 'motorista') h += `<option value="${e.val().email}" data-nome="${e.val().nome}">${e.val().nome}</option>`; }); document.getElementById('carga-motorista').innerHTML = h; });
+            db.ref(`${DB_ROOT}/clientes`).once('value', s => { let h = ''; s.forEach(c => h += `<option value="${c.val().nome}">${c.val().nome}</option>`); document.getElementById('carga-cliente').innerHTML = h; });
+            abrirModal('modal-carga');
+        };
+
+        document.getElementById('form-carga').onsubmit = (e) => {
+            e.preventDefault();
+            const sm = document.getElementById('carga-motorista');
+            const placa = document.getElementById('carga-veiculo').value;
+            db.ref(`${DB_ROOT}/cargas`).push({
+                veiculo: placa, motorista_email: sm.value, motorista_nome: sm.options[sm.selectedIndex].getAttribute('data-nome'),
+                destino: document.getElementById('carga-cliente').value, nfe: document.getElementById('carga-nfe').value, 
+                desc: document.getElementById('carga-desc').value, status: 'Em Rota', data: Date.now()
+            });
+            db.ref(`${DB_ROOT}/frota`).orderByChild('placa').equalTo(placa).once('value', s => s.forEach(f => f.ref.update({ status: 'Em Rota' })));
+            fecharModal('modal-carga'); e.target.reset();
+        };
+
+        function remover(id, path) { if(confirm("Deseja excluir este registro definitivamente?")) db.ref(`${DB_ROOT}/${path}/${id}`).remove(); }
+        function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function fecharModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+        // --- 7. APP MOTORISTA ---
+        let watchId = null; let myPlaca = null;
+
+        function iniciarAppMotorista() {
+            db.ref(`${DB_ROOT}/cargas`).on('value', snap => {
+                let minhaViagem = null;
+                snap.forEach(c => { if(c.val().motorista_email === currentUser.email && c.val().status === 'Em Rota') minhaViagem = {...c.val(), id: c.key}; });
+                
+                if (minhaViagem) {
+                    myPlaca = minhaViagem.veiculo;
+                    document.getElementById('status-escala').innerHTML = `<div class="bg-red-600 text-white rounded-[2rem] p-8 text-center shadow-2xl"><p class="text-[10px] font-black uppercase tracking-[0.3em] mb-2 opacity-60">Operação Ativa</p><h4 class="text-5xl font-black tracking-widest">${myPlaca}</h4></div>`;
+                    document.getElementById('btn-toggle-gps').disabled = false;
+                    document.getElementById('gps-status-msg').innerHTML = "<p class='text-xs font-bold text-slate-500 uppercase tracking-widest'>Inicie a Transmissão Satelital</p>";
+                    document.getElementById('motorista-cargas-container').classList.remove('hidden');
+                    document.getElementById('motorista-lista-cargas').innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-2 h-full bg-red-600"></div>
+                        <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Ponto de Entrega</p>
+                        <h4 class="text-2xl font-black text-white mb-4">${minhaViagem.destino}</h4>
+                        <div class="bg-slate-950 p-5 rounded-2xl mb-6 border border-slate-800">
+                             <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Doc: NFe ${minhaViagem.nfe}</p>
+                             <p class="text-xs text-slate-400 font-medium">${minhaViagem.desc}</p>
+                        </div>
+                        <button onclick="confirmarEntrega('${minhaViagem.id}','${minhaViagem.veiculo}')" class="w-full bg-green-600 hover:bg-green-500 text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                            <i class='bx bx-check-double text-2xl'></i> Confirmar Descarga
+                        </button>
+                    </div>`;
+                } else {
+                    myPlaca = null; if(watchId) toggleGPS();
+                    document.getElementById('status-escala').innerHTML = `<div class="bg-slate-900 border border-slate-800 p-10 rounded-[2.5rem] text-center"><i class='bx bxs-coffee-togo text-5xl text-slate-700 mb-4'></i><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sem Escala no Momento</p></div>`;
+                    document.getElementById('motorista-cargas-container').classList.add('hidden');
+                    document.getElementById('btn-toggle-gps').disabled = true;
+                }
+            });
+        }
+
+        function toggleGPS() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId); watchId = null;
+                db.ref(`${DB_ROOT}/gps_tracking/${myPlaca}/status`).set('offline');
+                document.getElementById('gps-pulse').classList.add('hidden');
+                document.getElementById('gps-icon').className = 'bx bx-navigation text-6xl text-slate-700 mb-2';
+                document.getElementById('gps-text').innerText = 'Transmitir';
+                document.getElementById('btn-toggle-gps').classList.remove('border-red-600');
+            } else {
+                if(!navigator.geolocation) return alert("Sem permissão de GPS.");
+                watchId = navigator.geolocation.watchPosition(pos => {
+                    db.ref(`${DB_ROOT}/gps_tracking/${myPlaca}`).set({ lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: Date.now(), status: 'online', motorista: currentUser.email.split('@')[0] });
+                }, err => { alert("GPS Bloqueado."); toggleGPS(); }, { enableHighAccuracy: true });
+                document.getElementById('gps-pulse').classList.remove('hidden');
+                document.getElementById('gps-icon').className = 'bx bx-radar text-6xl text-red-600 mb-2';
+                document.getElementById('gps-text').innerText = 'Online';
+                document.getElementById('btn-toggle-gps').classList.add('border-red-600');
+            }
+        }
+
+        function confirmarEntrega(id, placa) {
+            if (confirm("Finalizar esta montagem/entrega?")) {
+                db.ref(`${DB_ROOT}/cargas/${id}`).update({ status: 'Entregue' });
+                db.ref(`${DB_ROOT}/frota`).orderByChild('placa').equalTo(placa).once('value', s => s.forEach(f => f.ref.update({ status: 'Disponível' })));
+            }
+        }
+
+        document.getElementById('form-ocorrencia').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-salvar-ocorrencia');
+            btn.innerHTML = "<div class='loader !border-t-slate-950 mx-auto'></div> Enviando...";
+            btn.disabled = true;
+
+            try {
+                let url = "";
+                const file = document.getElementById('oco-foto').files[0];
+                if (file && CLOUDINARY_CLOUD_NAME) {
+                    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, { method: 'POST', body: fd });
+                    const data = await res.json(); url = data.secure_url;
+                }
+                await db.ref(`${DB_ROOT}/ocorrencias`).push({
+                    veiculo: myPlaca || "Externo", motorista: currentUser.email, tipo: document.getElementById('oco-tipo').value,
+                    valor: document.getElementById('oco-valor').value, desc: document.getElementById('oco-desc').value,
+                    imgUrl: url, data: Date.now()
+                });
+                alert("Reportado com Sucesso."); fecharModal('modal-ocorrencia'); e.target.reset();
+            } catch (err) { alert("Erro no envio."); } finally { btn.innerHTML = "Enviar para Auditoria"; btn.disabled = false; }
+        };
+
+    </script>
+</body>
+</html>
