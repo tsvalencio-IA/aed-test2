@@ -659,7 +659,6 @@
         let markersFrota = {}; let routeMarkers = []; let activePlaceDetails = null;
         let clienteGooglePlaceLocation = null;
 
-        // --- RESTAURAÇÃO DOS MOTORES DE MODAL ---
         window.abrirModal = function(id) {
             const m = document.getElementById(id);
             if(m) {
@@ -828,7 +827,7 @@
             }
         };
 
-        // --- SOLUÇÃO 1: OTIMIZAÇÃO (CAIXEIRO VIAJANTE) À PROVA DE FALHAS (FAIL-SAFE) ---
+        // --- SOLUÇÃO 1: CAIXEIRO VIAJANTE E ROTA BLINDADA ---
         window.analisarRotaClientesBase = async function() {
             const placa = document.getElementById('radar-veiculo').value;
             const org = document.getElementById('origem-rota').value;
@@ -855,44 +854,81 @@
             clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
 
             const deliveryPoints = [];
-            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Montando Rota...";
-            
-            // Monta os pontos aceitando tanto GPS quanto Textos Puros para evitar falhas do Geocoder
             for (const carga of romaneio) {
                 const cliMatch = clientesBase.find(c => c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
                 if (cliMatch && cliMatch.lat && cliMatch.lng) {
-                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(cliMatch.lat), parseFloat(cliMatch.lng)), stopover: true, nome: carga.destino, id: carga.id });
+                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(cliMatch.lat), parseFloat(cliMatch.lng)), nome: carga.destino, id: carga.id });
                 } else {
-                    deliveryPoints.push({ location: carga.endereco_destino || carga.destino, stopover: true, nome: carga.destino, id: carga.id });
+                    deliveryPoints.push({ location: carga.endereco_destino || carga.destino, nome: carga.destino, id: carga.id });
                 }
             }
 
-            // O Destino final genérico e Waypoints
-            const finalDestination = deliveryPoints.pop(); 
-            const waypointsList = deliveryPoints;
+            let originLatLng;
+            const geocoder = new google.maps.Geocoder();
 
-            document.getElementById('destino-rota').value = finalDestination.nome + " (Otimizado)";
+            if (typeof originCoord === 'object') {
+                originLatLng = originCoord;
+            } else {
+                btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Validando Origem...";
+                originLatLng = await new Promise(res => geocoder.geocode({ address: originCoord }, (r, s) => {
+                    if (s === 'OK' && r[0]) res({ lat: r[0].geometry.location.lat(), lng: r[0].geometry.location.lng() });
+                    else res({lat: -20.8, lng: -49.3});
+                }));
+            }
 
-            // Pedido Google Maps com optimizeWaypoints: true NATIVO (Ignora a ordem do sistema e vai pela lógica real da rua)
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Otimizando Rota...";
+            
+            // Garantir que todos os pontos de entrega tenham Lat/Lng para cálculo do mais distante
+            await Promise.all(deliveryPoints.map(async (pt) => {
+                if(typeof pt.location === 'string') {
+                    await new Promise(res => {
+                        geocoder.geocode({ address: pt.location }, (r, s) => {
+                            if (s === 'OK' && r[0]) pt.location = r[0].geometry.location;
+                            res();
+                        });
+                    });
+                }
+            }));
+
+            // Encontrar o ponto mais distante do Camião para definir como "Destino Final" da viagem
+            let maxDist = -1;
+            let destIndex = deliveryPoints.length - 1;
+            const origPt = new google.maps.LatLng(originLatLng.lat, originLatLng.lng);
+
+            deliveryPoints.forEach((pt, i) => {
+                if(typeof pt.location === 'object' && pt.location.lat) {
+                    const d = google.maps.geometry.spherical.computeDistanceBetween(origPt, pt.location);
+                    if (d > maxDist) { maxDist = d; destIndex = i; }
+                }
+            });
+
+            const finalDestination = deliveryPoints[destIndex];
+            const waypointsList = deliveryPoints.filter((_, i) => i !== destIndex);
+
+            document.getElementById('destino-rota').value = finalDestination.nome + " (Destino Mais Longe)";
+
+            // A MÁGICA DOS WAYPOINTS LIMPOS (Resolvendo o erro "InvalidValueError unknown property nome")
+            const cleanWaypoints = waypointsList.map(w => ({ location: w.location, stopover: true }));
+
             const req = {
-                origin: originCoord,
+                origin: originLatLng,
                 destination: finalDestination.location,
-                waypoints: waypointsList,
+                waypoints: cleanWaypoints,
                 optimizeWaypoints: true, 
                 travelMode: 'DRIVING'
             };
 
             directionsService.route(req, (res, status) => {
                 if (status === 'OK') {
-                    window.processarCruzamentoRadial(res, btn, clientesBase, romaneio, placa);
+                    window.processarCruzamentoRadial(res, btn, clientesBase, romaneio, placa, geocoder);
                 } else {
                     btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Tentar Novamente";
-                    alert("O Google falhou ao otimizar esta rota fisicamente. Verifique os endereços. Erro: " + status);
+                    alert("A Google Maps falhou ao traçar esta rota. Erro: " + status);
                 }
             });
         };
 
-        window.processarCruzamentoRadial = async function(res, btn, clientesBase, romaneio, veiculoSelecionado) {
+        window.processarCruzamentoRadial = async function(res, btn, clientesBase, romaneio, veiculoSelecionado, geocoder) {
             directionsRenderer.setDirections(res);
             
             if (!window.trafficLayer) window.trafficLayer = new google.maps.TrafficLayer();
@@ -913,55 +949,80 @@
             const detailedPath = [];
             res.routes[0].legs.forEach(leg => { leg.steps.forEach(step => { step.path.forEach(p => detailedPath.push(p)); }); });
             
-            const routePolyline = new google.maps.Polyline({ path: detailedPath });
+            // Re-criando a Interpolação para garantir 100% de varredura
+            const densePath = [];
+            for (let i = 0; i < detailedPath.length - 1; i++) {
+                const p1 = detailedPath[i];
+                const p2 = detailedPath[i+1];
+                densePath.push(p1);
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                if (dist > 1500) { 
+                    const fractionSteps = Math.ceil(dist / 1500);
+                    for (let j = 1; j < fractionSteps; j++) {
+                        densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
+                    }
+                }
+            }
+            if (detailedPath.length > 0) densePath.push(detailedPath[detailedPath.length - 1]);
 
             const isClientInRadar = (clientLatLng) => {
-                // Checa precisão pontual
-                if (google.maps.geometry.poly.isLocationOnEdge(clientLatLng, routePolyline, 0.05)) return true;
-                // Checa o Raio em cada vértice da rua desenhada
-                for(let i=0; i < detailedPath.length; i += 3) { 
-                    if (google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, detailedPath[i]) <= 15000) return true;
+                for(let i=0; i < densePath.length; i++) { 
+                    if (google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, densePath[i]) <= 15000) return true;
                 }
                 return false;
             };
 
-            btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Rastreiando Clientes Válidos...`;
+            if (res.routes && res.routes.length > 0 && res.routes[0].legs && res.routes[0].legs.length > 0) {
+                const truckOriginPos = res.routes[0].legs[0].start_location;
+                const truckMarker = new google.maps.Marker({
+                    position: truckOriginPos, map: mapRotaObj, title: "Camião", 
+                    icon: "https://maps.google.com/mapfiles/ms/icons/truck.png", zIndex: 999
+                });
+                routeMarkers.push(truckMarker);
+            }
+
+            btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Analisando Clientes Base...`;
             
             const clientesNoCaminho = [];
             const nomesEntregasOficiais = romaneio.map(r => r.destino.toUpperCase());
-            const geocoder = new google.maps.Geocoder();
-            let bloqueiosGeocoding = 0;
+            const clientesSemGps = [];
 
-            // SOLUÇÃO 2: Bypass Elegante de Bloqueio do Geocoder
+            // SOLUÇÃO 2: Verificação veloz (Os que já têm GPS entram na hora, os outros aguardam processamento paralelo)
             for (const cli of clientesBase) {
                 if(nomesEntregasOficiais.includes(cli.nome.toUpperCase())) continue; 
 
                 if (cli.lat && cli.lng) {
-                    // Tem GPS? É instantâneo e à prova de bloqueios do Google Cloud
                     const localCliente = new google.maps.LatLng(parseFloat(cli.lat), parseFloat(cli.lng));
                     if (isClientInRadar(localCliente)) {
                         clientesNoCaminho.push({ ...cli, location: { lat: localCliente.lat(), lng: localCliente.lng() } });
                     }
                 } else {
-                    // Sem GPS? Pede ao Geocoder sequencialmente. Se a API estiver desligada, ele anota a falha silenciosamente sem destruir a varredura inteira.
-                    await new Promise(resolveDelay => {
+                    clientesSemGps.push(cli);
+                }
+            }
+
+            // Geocoder Paralelo Escalonado (Para achar Menil e Dijo rapidamente e sem travar tudo)
+            if(clientesSemGps.length > 0) {
+                btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Localizando Endereços Antigos...`;
+                let falhasGeocoding = 0;
+                
+                await Promise.all(clientesSemGps.map(async (cli, index) => {
+                    await new Promise(r => setTimeout(r, index * 60)); // Delay sutil para não bloquear a API
+                    return new Promise(resolve => {
                         geocoder.geocode({ address: `${cli.end || ''}, ${cli.cid}`.trim() }, (results, geoStatus) => {
                             if (geoStatus === 'OK' && results[0]) {
                                 const localCliente = results[0].geometry.location;
                                 if (isClientInRadar(localCliente)) {
                                     clientesNoCaminho.push({ ...cli, location: { lat: localCliente.lat(), lng: localCliente.lng() }, end: results[0].formatted_address });
                                 }
-                            } else if (geoStatus === 'REQUEST_DENIED' || geoStatus === 'OVER_QUERY_LIMIT') {
-                                bloqueiosGeocoding++;
+                            } else {
+                                falhasGeocoding++;
                             }
-                            setTimeout(resolveDelay, 150); 
+                            resolve();
                         });
                     });
-                }
-            }
-
-            if(bloqueiosGeocoding > 0) {
-                console.error(`[AED Alerta]: O seu painel no Google Cloud desativou a Geocoding API. Por isso, ${bloqueiosGeocoding} clientes (como a Menil) que não possuem GPS exato não puderam ser processados pelo Radar de Vendas.`);
+                }));
+                if (falhasGeocoding > 0) console.warn(`A API de mapas não conseguiu encontrar as coordenadas de ${falhasGeocoding} clientes digitados à mão.`);
             }
 
             btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Rota Processada com Sucesso";
@@ -1276,9 +1337,12 @@
             const gps = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
             let originLatLng;
             
+            const geocoder = new google.maps.Geocoder();
+
             if(gps.exists() && gps.val().status === 'online') {
                 originLatLng = { lat: parseFloat(gps.val().lat), lng: parseFloat(gps.val().lng) };
             } else {
+                // Fallback caso não tenha satélite vivo
                 originLatLng = { lat: -20.8, lng: -49.3 };
             }
             
@@ -1288,46 +1352,66 @@
 
             const deliveryPoints = [];
             
-            // Aceita tudo. Se falhar no geocoder depois, usa as Strings brutas.
+            // Identifica as Coordenadas Reais
             for (const carga of romaneio) {
                 const cliMatch = clientesBase.find(c => c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
                 if (cliMatch && cliMatch.lat && cliMatch.lng) {
-                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(cliMatch.lat), parseFloat(cliMatch.lng)), stopover: true, nome: carga.destino, id: carga.id, cargaObj: carga });
+                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(cliMatch.lat), parseFloat(cliMatch.lng)), nome: carga.destino, id: carga.id, cargaObj: carga });
                 } else {
-                    deliveryPoints.push({ location: carga.endereco_destino || carga.destino, stopover: true, nome: carga.destino, id: carga.id, cargaObj: carga });
+                    await new Promise(resolve => {
+                        geocoder.geocode({ address: carga.endereco_destino || carga.destino }, (res, status) => {
+                            if (status === 'OK' && res[0]) {
+                                deliveryPoints.push({ location: res[0].geometry.location, nome: carga.destino, id: carga.id, cargaObj: carga });
+                            }
+                            setTimeout(resolve, 150);
+                        });
+                    });
                 }
             }
             
             if(deliveryPoints.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
 
-            const finalDestination = deliveryPoints.pop();
-            const waypointsList = deliveryPoints;
+            // Greedy Sort no Motorista também!
+            let unvisited = [...deliveryPoints];
+            let sortedPoints = [];
+            let currentPos = originLatLng;
+
+            while(unvisited.length > 0) {
+                let minDist = Infinity;
+                let closestIdx = -1;
+                for(let i=0; i < unvisited.length; i++) {
+                    const pt = unvisited[i];
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(currentPos.lat, currentPos.lng),
+                        new google.maps.LatLng(typeof pt.location.lat === 'function' ? pt.location.lat() : pt.location.lat, typeof pt.location.lng === 'function' ? pt.location.lng() : pt.location.lng)
+                    );
+                    if(dist < minDist) { minDist = dist; closestIdx = i; }
+                }
+                const closestPt = unvisited[closestIdx];
+                sortedPoints.push(closestPt);
+                currentPos = closestPt.location;
+                unvisited.splice(closestIdx, 1);
+            }
+
+            const finalDestination = sortedPoints[sortedPoints.length - 1];
+            const waypointsList = sortedPoints.slice(0, -1).map(pt => ({ location: pt.location, stopover: true }));
             
             if(!directionsService) directionsService = new google.maps.DirectionsService();
             
             directionsService.route({
-                origin: originLatLng,
+                origin: new google.maps.LatLng(originLatLng.lat, originLatLng.lng),
                 destination: finalDestination.location,
                 waypoints: waypointsList,
-                optimizeWaypoints: true,
+                optimizeWaypoints: false,
                 travelMode: 'DRIVING'
             }, (res, status) => {
                 if(overlay) overlay.classList.add('hidden');
-                
-                let orderedRomaneio = [];
-                if(status === 'OK') {
-                    if(dirRendererMot) dirRendererMot.setDirections(res);
-                    const order = res.routes[0].waypoint_order; 
-                    order.forEach(ordIdx => { orderedRomaneio.push(waypointsList[ordIdx].cargaObj); });
-                    orderedRomaneio.push(finalDestination.cargaObj); 
-                } else {
-                    // Fallback blindado! Se API bloqueou, mostra a lista mesmo sem otimizar a rota visual!
-                    orderedRomaneio = romaneio; 
-                }
+                if(status === 'OK' && dirRendererMot) dirRendererMot.setDirections(res);
 
                 let cartoesCarga = '';
-                orderedRomaneio.forEach((c, index) => { 
-                    const labelOrdem = (index === orderedRomaneio.length - 1) ? "DESTINO FINAL" : `PARADA ${index + 1} (OTIMIZADA)`;
+                sortedPoints.forEach((pt, index) => { 
+                    const c = pt.cargaObj;
+                    const labelOrdem = (index === sortedPoints.length - 1) ? "DESTINO FINAL (OFICIAL)" : `PARADA ${index + 1} (OTIMIZADA)`;
                     cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> ${labelOrdem}</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; 
                 });
                 const lCargas = document.getElementById('motorista-lista-cargas'); 
