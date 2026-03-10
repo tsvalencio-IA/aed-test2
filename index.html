@@ -611,6 +611,24 @@
         let markersFrota = {}; let routeMarkers = []; let activePlaceDetails = null;
         let clienteGooglePlaceLocation = null;
 
+        // --- RESTAURAÇÃO DOS MOTORES DE MODAL ---
+        window.abrirModal = function(id) {
+            const m = document.getElementById(id);
+            if(m) {
+                m.classList.remove('hidden');
+                m.classList.add('flex');
+            }
+        };
+
+        window.fecharModal = function(id) {
+            const m = document.getElementById(id);
+            if(m) {
+                m.classList.remove('flex');
+                m.classList.add('hidden');
+            }
+        };
+        // ----------------------------------------
+
         window.nav = function(target) {
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('nav-btn-active', 'nav-btn-ia-active');
@@ -738,6 +756,7 @@
             });
         };
 
+        // --- CORREÇÃO BUG 1: Mapeamento em Memória das Coordenadas Exatas para Waypoints ---
         window.preencherRotaVeiculo = async function() {
             const p = document.getElementById('radar-veiculo').value; if(!p) return;
             document.getElementById('origem-rota').value = "Puxando Satélite...";
@@ -750,10 +769,29 @@
                 document.getElementById('origem-rota').value = "São José do Rio Preto, SP";
             }
             
+            // Puxa todos os clientes da base para criar o dicionário de coordendas exatas
+            const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
+            const mapClientes = {};
+            if(clSnap.exists()) {
+                clSnap.forEach(cli => {
+                    const cVal = cli.val();
+                    if(cVal.lat && cVal.lng) {
+                        const endKey = cVal.end ? cVal.end : cVal.cid;
+                        mapClientes[endKey] = `${cVal.lat}, ${cVal.lng}`;
+                        mapClientes[cVal.nome] = `${cVal.lat}, ${cVal.lng}`; 
+                    }
+                });
+            }
+            
             const cgSnap = await db.ref(`${DB_ROOT}/cargas`).orderByChild('veiculo').equalTo(p).once('value');
             let d = []; 
             cgSnap.forEach(c => { 
-                if(c.val().status === 'Em Rota') d.push(c.val().endereco_destino || c.val().destino); 
+                if(c.val().status === 'Em Rota') {
+                    const dstStr = c.val().endereco_destino || c.val().destino;
+                    // Se achou no dicionário, usa "lat, lng" exato. Senão, vai com o texto.
+                    const exactCoord = mapClientes[dstStr] || mapClientes[c.val().destino] || dstStr;
+                    d.push(exactCoord);
+                }
             });
             
             if(d.length > 0) {
@@ -761,6 +799,7 @@
                 document.getElementById('destino-rota').dataset.wpts = JSON.stringify(d.slice(0, -1)); 
             } else {
                 document.getElementById('destino-rota').value = "Nenhum Romaneio ativo.";
+                document.getElementById('destino-rota').dataset.wpts = "";
             }
         };
 
@@ -782,16 +821,14 @@
             };
 
             const originFormatado = formatarCoord(org);
+            const destFormatado = formatarCoord(dst);
             let wpts = [];
             const wData = document.getElementById('destino-rota').dataset.wpts;
-            if(wData) { try { JSON.parse(wData).forEach(w => wpts.push({location: formatarCoord(w), stopover: true})); } catch(e){} }
+            if(wData && wData !== "") { 
+                try { JSON.parse(wData).forEach(w => wpts.push({location: formatarCoord(w), stopover: true})); } catch(e){} 
+            }
 
-            const geocoder = new google.maps.Geocoder();
-            
-            geocoder.geocode({ address: dst }, (resDst, statDst) => {
-                let destReq = dst;
-                if (statDst === 'OK' && resDst[0]) { destReq = resDst[0].geometry.location; }
-
+            const callRoute = (destReq) => {
                 const requestCompleto = { 
                     origin: originFormatado, 
                     destination: destReq, 
@@ -814,7 +851,7 @@
                                 window.processarCruzamentoRadial(resFall, btn);
                             } else {
                                 btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Iniciar Varredura Novamente";
-                                alert("O Google não conseguiu calcular nenhuma rota para " + dst + ".");
+                                alert("O Google não conseguiu calcular nenhuma rota direta para " + dst + ".");
                             }
                         });
                     } else {
@@ -822,7 +859,19 @@
                         alert("O Google Mapas recusou o pedido de rota. Motivo: " + status + ".");
                     }
                 });
-            });
+            };
+
+            // Se for um objeto Latitude/Longitude puro já cruzado pelo mapa, roda direto.
+            if (typeof destFormatado === 'object') {
+                callRoute(destFormatado);
+            } else {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: dst }, (resDst, statDst) => {
+                    let destReq = dst;
+                    if (statDst === 'OK' && resDst[0]) { destReq = resDst[0].geometry.location; }
+                    callRoute(destReq);
+                });
+            }
         };
 
         window.processarCruzamentoRadial = async function(res, btn) {
@@ -854,15 +903,33 @@
                 });
             });
             
+            // --- CORREÇÃO BUG 2: Interpolação Matemática para Radar 15km sem Pontos Cegos ---
+            // A Google envia poucos pontos em rodovias retas, gerando falhas nos raios circulares.
+            // Aqui injetamos um novo ponto garantido na memória a cada 3km da estrada para 100% de varredura.
+            const densePath = [];
+            for (let i = 0; i < detailedPath.length - 1; i++) {
+                const p1 = detailedPath[i];
+                const p2 = detailedPath[i+1];
+                densePath.push(p1);
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                if (dist > 3000) { 
+                    const fractionSteps = Math.ceil(dist / 3000);
+                    for (let j = 1; j < fractionSteps; j++) {
+                        densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
+                    }
+                }
+            }
+            if (detailedPath.length > 0) densePath.push(detailedPath[detailedPath.length - 1]);
+
             const routePolyline = new google.maps.Polyline({ path: detailedPath });
 
             const isClientInRadar = (clientLatLng) => {
-                // Margem de expansão vetorial para ruas adjacentes
+                // Margem de expansão vetorial para ruas adjacentes diretas
                 if (google.maps.geometry.poly.isLocationOnEdge(clientLatLng, routePolyline, 0.15)) return true;
                 
-                // Varredura radial forçada a cada ponto exato da curva da estrada (15km)
-                for(let i=0; i < detailedPath.length; i += 5) {
-                    if(google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, detailedPath[i]) <= 15000) {
+                // Varredura radial forçada e absoluta através dos pontos matematicamente interpolados
+                for(let i=0; i < densePath.length; i++) {
+                    if(google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, densePath[i]) <= 15000) {
                         return true;
                     }
                 }
