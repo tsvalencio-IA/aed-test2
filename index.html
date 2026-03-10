@@ -48,7 +48,7 @@
     <script>
         // Escudo global de proteção de rede
         window.onerror = function(msg, url, lineNo, columnNo, error) {
-            if (msg.includes("Script error")) return true; 
+            if (msg && msg.includes("Script error")) return true; 
             return false;
         };
     </script>
@@ -537,7 +537,7 @@
         </div>
     </div>
 
-    <!-- Modal Cliente (Com Autocomplete Nativo Google e Fallback) -->
+    <!-- Modal Cliente (Com Autocomplete Nativo Google) -->
     <div id="modal-cliente" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[200] p-4">
         <div class="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl">
             <h3 class="font-black uppercase mb-6 text-sm flex items-center gap-2"><i class='bx bxs-store text-red-600'></i> Nova Loja na Base</h3>
@@ -561,11 +561,13 @@
         </div>
     </div>
     
+    <!-- Modal Frota -->
     <div id="modal-frota" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[200] p-4"><div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl"><h3 class="font-black uppercase mb-6 text-sm flex items-center gap-2"><i class='bx bxs-truck text-red-600'></i> Novo Veículo</h3><form id="form-frota" class="space-y-4"><input type="text" id="fr-placa" placeholder="Placa Mercosul" required class="w-full p-4 border rounded-2xl uppercase font-black tracking-widest"><input type="text" id="fr-modelo" placeholder="Ex: Iveco Daily" required class="w-full p-4 border rounded-2xl text-sm font-bold"><select id="fr-status" class="w-full p-4 border rounded-2xl text-xs font-black uppercase bg-white"><option value="Disponível">Disponível</option><option value="Em Oficina">Em Manutenção</option></select><button type="submit" class="w-full bg-red-600 text-white p-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all">Registar Viatura</button><button type="button" onclick="window.fecharModal('modal-frota')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-3">Sair</button></form></div></div>
     
+    <!-- Modal Ocorrência -->
     <div id="modal-ocorrencia" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[200] p-4"><div class="bg-slate-800 rounded-[2.5rem] w-full max-w-sm p-8 text-white shadow-2xl border border-slate-700"><h3 class="font-black uppercase mb-6 text-sm tracking-widest flex items-center gap-3"><i class='bx bx-receipt text-amber-500 text-2xl'></i> Relatar Evento</h3><form id="form-ocorrencia" class="space-y-5"><select id="oco-tipo" class="w-full p-3.5 rounded-xl bg-slate-900 text-white border border-slate-600 outline-none focus:border-amber-500 font-bold text-sm"><option value="Pedágio">Portagem / Pedágio</option><option value="Combustível">Diesel / Arla</option><option value="Oficina">Reparo de Emergência</option><option value="Almoço">Refeição / Pernoite</option></select><input type="number" step="0.01" id="oco-valor" placeholder="Custo R$" class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-500 font-black text-2xl text-center"><input type="file" id="oco-foto" accept="image/*" capture="environment" class="w-full text-[10px] text-slate-400 border border-slate-700 p-2 rounded-xl"><textarea id="oco-desc" placeholder="Detalhes do ocorrido..." required class="w-full p-3.5 rounded-xl bg-slate-900 text-white border border-slate-600 resize-none outline-none focus:border-amber-500 text-sm transition"></textarea><button type="submit" id="btn-salvar-ocorrencia" class="w-full bg-amber-600 text-slate-900 p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Concluir Envio</button><button type="button" onclick="window.fecharModal('modal-ocorrencia')" class="w-full text-slate-500 text-[10px] font-black uppercase mt-3">Descartar</button></form></div></div>
 
-    <!-- ================= 6. JAVASCRIPT INTEGRAL (ENGENHARIA LOGÍSTICA E GEOCODIFICAÇÃO RADIAL) ================= -->
+    <!-- ================= 6. JAVASCRIPT INTEGRAL ================= -->
     <script>
         // --- 1. FIREBASE CONFIG ---
         const firebaseConfig = {
@@ -582,6 +584,7 @@
         const auth = firebase.auth();
         const DB_ROOT = 'aed_data_empresa';
 
+        // Secondary App para evitar derrubar login do Admin ao criar motoristas
         let secondaryApp;
         try { secondaryApp = firebase.app("SecondaryApp"); } catch (e) { secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp"); }
         const secondaryAuth = secondaryApp.auth();
@@ -593,7 +596,7 @@
         let mapsLoaded = false; let mapsLoading = false;
         let mapRastreioObj = null, mapRotaObj = null;
         let directionsService = null, directionsRenderer = null;
-        let vehicleMarkers = {}; let routeMarkers = []; let activePlaceDetails = null;
+        let markersFrota = {}; let routeMarkers = []; let activePlaceDetails = null;
         let clienteGooglePlaceLocation = null;
 
         // --- 2. NAVEGAÇÃO E AUTH ---
@@ -620,6 +623,9 @@
             if(target === 'rastreio') window.checkMap('rastreio');
             if(target === 'prospeccao') { window.checkMap('rota'); window.popularSelectVeiculosRadar(); }
         };
+
+        window.abrirModal = function(id) { const m = document.getElementById(id); if(m) { m.classList.remove('hidden'); m.classList.add('flex'); } };
+        window.fecharModal = function(id) { const m = document.getElementById(id); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } };
 
         const loginForm = document.getElementById('login-form');
         if(loginForm) loginForm.onsubmit = async (e) => {
@@ -718,7 +724,7 @@
             }
         };
 
-        // --- 4. RADAR LOGÍSTICO IA (NOVO CÉREBRO RADIAL) ---
+        // --- 4. RADAR LOGÍSTICO IA (NOVO CÉREBRO RADIAL DE 15KM) ---
         window.popularSelectVeiculosRadar = function() {
             db.ref(`${DB_ROOT}/frota`).once('value', snap => {
                 let h = '<option value="">-- Caminhões Operando em Rota --</option>';
