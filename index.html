@@ -1,3 +1,4 @@
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1217,12 +1218,41 @@
         window.gerarTextoIA = async function() {
             const txt = document.getElementById('ia-texto'); const load = document.getElementById('ia-loading');
             if(load) load.classList.remove('hidden'); if(txt) txt.value = "";
+            
+            if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === "") {
+                if(txt) txt.value = "ERRO: Chave da Google Gemini IA não configurada.\n\nVá ao menu 'Configurações & APIs' e insira sua API Key do Google AI Studio para ativar o Cérebro IA.";
+                if(load) load.classList.add('hidden');
+                return;
+            }
+
             const ctx = document.getElementById('ia-contexto').options[document.getElementById('ia-contexto').selectedIndex].text;
             const prompt = `Aja como o Diretor de Logística da AED Marcenaria. Escreva uma mensagem de WhatsApp para o cliente cadastrado "${activePlaceDetails.name}" (Cidade/Local: ${activePlaceDetails.address}). Contexto: Estamos a planear a rota logística dos próximos dias e o nosso camião vai passar obrigatoriamente na região ou estrada deles para realizar outras entregas. A nossa estratégia com eles agora é: "${ctx}". Instruções: Como já são nossos clientes, seja cordial e próximo. O grande benefício é que podemos colocar mercadoria deles à "boleia" no camião com ZERO CUSTO DE FRETE. Não envie a mensagem como se o camião estivesse à porta agora, mostre que estamos a organizar a logística semanal. Use 2 ou 3 emojis, tom profissional mas atencioso, e feche com uma pergunta que gere interação imediata.`;
+            
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ contents: [{parts:[{text: prompt}]}] }) });
-                const d = await res.json(); if(txt) txt.value = d.candidates[0].content.parts[0].text;
-            } catch(e) { if(txt) txt.value = "Conexão IA perdida."; } finally { if(load) load.classList.add('hidden'); }
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ contents: [{parts:[{text: prompt}]}] }) 
+                });
+                
+                const d = await res.json(); 
+                
+                if (!res.ok) {
+                    console.error("Erro da API Gemini:", d);
+                    throw new Error(d.error ? d.error.message : "Falha na resposta da API.");
+                }
+
+                if(txt && d.candidates && d.candidates.length > 0) {
+                    txt.value = d.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error("A IA não retornou nenhum texto válido.");
+                }
+            } catch(e) { 
+                console.error("Erro detalhado IA:", e);
+                if(txt) txt.value = `⚠️ Conexão IA Falhou.\n\nDetalhe Técnico: ${e.message}\n\nVerifique:\n1. Se a Chave de API no menu Configurações está correta.\n2. Se sua rede não está bloqueando conexões ao Google.\n3. Tente clicar em "RECRIAR" novamente.`; 
+            } finally { 
+                if(load) load.classList.add('hidden'); 
+            }
         };
 
         window.enviarWpp = function() { 
