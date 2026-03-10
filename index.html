@@ -1,4 +1,4 @@
-<html lang="pt-BR">
+html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        body { fo<!DOCTYPE html>nt-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         .hidden-view { display: none !important; }
         #map-rastreio, #map-rota, #map-motorista { height: 100%; min-height: 400px; border-radius: 0.75rem; z-index: 10; background-color: #e2e8f0; }
         
@@ -298,10 +298,13 @@
                                 <h3 class="font-black uppercase text-xs tracking-[0.15em] flex items-center gap-3"><i class='bx bxs-user-check text-amber-500 text-xl'></i> Visão do Radar</h3>
                                 <span id="badge-places" class="bg-amber-500 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full hidden shadow-inner tracking-widest">Aguardando...</span>
                             </div>
-                            <div id="lista-prospeccao" class="p-6 flex-grow overflow-y-auto space-y-4 bg-slate-50">
-                                <div class="text-center py-24 text-slate-300 flex flex-col items-center opacity-40">
-                                    <i class='bx bx-scan text-8xl mb-4'></i>
-                                    <p class="text-xs font-black uppercase tracking-[0.3em]">Aguardando Sincronização<br>Radial da Rota</p>
+                            <div id="lista-prospeccao" class="p-6 flex-grow overflow-y-auto space-y-4 bg-slate-50 relative">
+                                <div id="alerta-sucesso" class="absolute top-0 left-0 w-full bg-green-500 text-white text-xs font-black p-2 text-center uppercase tracking-widest hidden z-50 shadow-md">Radar Finalizado!</div>
+                                <div id="conteudo-lista" class="space-y-4">
+                                    <div class="text-center py-24 text-slate-300 flex flex-col items-center opacity-40">
+                                        <i class='bx bx-scan text-8xl mb-4'></i>
+                                        <p class="text-xs font-black uppercase tracking-[0.3em]">Aguardando Sincronização<br>Radial da Rota</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -661,7 +664,6 @@
         let clienteGooglePlaceLocation = null;
 
         // O ESCUDO ANTI-CRASH MATEMÁTICO
-        // Impede que o sistema processe valores vazios ou NaN gerados pelo bug de digitação do teclado
         function getSafeLatLng(lat, lng) {
             if(lat === undefined || lat === null || lat === "" || lng === undefined || lng === null || lng === "") return null;
             let latRaw = typeof lat === 'string' ? lat.replace(',', '.') : lat;
@@ -872,6 +874,8 @@
             const placa = document.getElementById('radar-veiculo').value;
             const org = document.getElementById('origem-rota').value;
             const btn = document.getElementById('btn-analisar-rota');
+            const alertBox = document.getElementById('alerta-sucesso');
+            if(alertBox) alertBox.classList.add('hidden');
             
             if(!directionsService || !org || !placa) return alert("Erro: Selecione a viatura e aguarde o GPS.");
 
@@ -889,9 +893,11 @@
                 return alert("Nenhum romaneio ativo encontrado para este camião.");
             }
 
+            // O GRANDE BUG ESTAVA AQUI: O forEach do Firebase cancela o laço se a arrow function não tiver {}.
+            // Agora com { }, a lista de TODOS os clientes é extraída perfeitamente, sem parar no primeiro!
             const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
             const clientesBase = [];
-            clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
+            clSnap.forEach(c => { clientesBase.push({...c.val(), id: c.key}); });
 
             const deliveryPoints = [];
             let originLatLng;
@@ -913,7 +919,6 @@
 
             btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Extraindo Lat/Lng Otimizadas...";
             
-            // Tratamento Fallback com a nova blindagem do getSafeLatLng para evitar o CRASH SILENCIOSO DO "NaN"
             await Promise.all(romaneio.map(async (carga) => {
                 const cliMatch = clientesBase.find(c => {
                     if(!c || !carga) return false;
@@ -934,7 +939,6 @@
                 }
             }));
 
-            // Converter possíveis strings em pontos de geometria reais para o Motor Google
             await Promise.all(deliveryPoints.map(async (pt) => {
                 if(typeof pt.location === 'string' || !pt.location.lat) {
                     await new Promise(res => {
@@ -993,173 +997,214 @@
         };
 
         // ====== O SEGREDO DO RADAR TRANSPARENTE E RAIO-X (V4) ======
-        window.processarCruzamentoRadial = async function(res, btn, clientesBase, romaneio, veiculoSelecionado, geocoder) {
-            directionsRenderer.setDirections(res);
-            
-            if (!window.trafficLayer) window.trafficLayer = new google.maps.TrafficLayer();
-            window.trafficLayer.setMap(mapRotaObj);
+        window.processarCruzamentoRadial = function(res, btn, clientesBase, romaneio, veiculoSelecionado) {
+            try {
+                directionsRenderer.setDirections(res);
+                
+                if (!window.trafficLayer) window.trafficLayer = new google.maps.TrafficLayer();
+                window.trafficLayer.setMap(mapRotaObj);
 
-            let tDist = 0, tTime = 0;
-            res.routes[0].legs.forEach(leg => {
-                tDist += leg.distance ? leg.distance.value : 0;
-                tTime += leg.duration_in_traffic ? leg.duration_in_traffic.value : (leg.duration ? leg.duration.value : 0);
-            });
-            
-            document.getElementById('rota-stats').classList.remove('hidden');
-            document.getElementById('stat-dist').innerText = (tDist / 1000).toFixed(1) + " km";
-            document.getElementById('stat-tempo').innerText = Math.floor(tTime / 3600) > 0 ? `${Math.floor(tTime / 3600)}h ${Math.floor((tTime % 3600) / 60)}m` : `${Math.floor((tTime % 3600) / 60)}m`;
-            
-            if(!google.maps.geometry || !google.maps.geometry.spherical) return alert("Erro crítico: A biblioteca esférica não inicializou.");
-            
-            const detailedPath = [];
-            res.routes[0].legs.forEach(leg => {
-                leg.steps.forEach(step => {
-                    step.path.forEach(p => detailedPath.push(p));
+                let tDist = 0, tTime = 0;
+                res.routes[0].legs.forEach(leg => {
+                    tDist += leg.distance ? leg.distance.value : 0;
+                    tTime += leg.duration_in_traffic ? leg.duration_in_traffic.value : (leg.duration ? leg.duration.value : 0);
                 });
-            });
+                
+                document.getElementById('rota-stats').classList.remove('hidden');
+                document.getElementById('stat-dist').innerText = (tDist / 1000).toFixed(1) + " km";
+                document.getElementById('stat-tempo').innerText = Math.floor(tTime / 3600) > 0 ? `${Math.floor(tTime / 3600)}h ${Math.floor((tTime % 3600) / 60)}m` : `${Math.floor((tTime % 3600) / 60)}m`;
+                
+                if(!google.maps.geometry || !google.maps.geometry.spherical) return alert("Erro crítico: A biblioteca esférica não inicializou.");
+                
+                const detailedPath = [];
+                res.routes[0].legs.forEach(leg => {
+                    leg.steps.forEach(step => {
+                        step.path.forEach(p => detailedPath.push(p));
+                    });
+                });
 
-            // 10 QUILÓMETROS DE RAIO! PARA NINGUÉM ESCAPAR. E INTERPOLAÇÃO A CADA 50 METROS PARA ABRANGER TODAS AS ESQUINAS.
-            const RAIO_LOGISTICO_METROS = 10000; 
+                const RAIO_LOGISTICO_METROS = 15000; 
 
-            const densePath = [];
-            for (let i = 0; i < detailedPath.length - 1; i++) {
-                const p1 = detailedPath[i];
-                const p2 = detailedPath[i+1];
-                densePath.push(p1);
-                const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                if (dist > 50) { 
-                    const fractionSteps = Math.ceil(dist / 50);
-                    for (let j = 1; j < fractionSteps; j++) {
-                        densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
+                const densePath = [];
+                for (let i = 0; i < detailedPath.length - 1; i++) {
+                    const p1 = detailedPath[i];
+                    const p2 = detailedPath[i+1];
+                    densePath.push(p1);
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                    if (dist > 50) { 
+                        const fractionSteps = Math.ceil(dist / 50);
+                        for (let j = 1; j < fractionSteps; j++) {
+                            densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
+                        }
                     }
                 }
-            }
-            if (detailedPath.length > 0) densePath.push(detailedPath[detailedPath.length - 1]);
+                if (detailedPath.length > 0) densePath.push(detailedPath[detailedPath.length - 1]);
 
-            if (res.routes && res.routes.length > 0 && res.routes[0].legs && res.routes[0].legs.length > 0) {
-                const truckOriginPos = res.routes[0].legs[0].start_location;
-                const m = await desenharMarcador(truckOriginPos, mapRotaObj, "Camião", "https://maps.google.com/mapfiles/ms/icons/truck.png");
-                routeMarkers.push(m);
-            }
+                btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Mapeando Todos os Clientes...`;
+                
+                const clientesIn = [];
+                const clientesOut = []; 
+                const clientesErro = []; 
+                
+                const nomesEntregasOficiais = romaneio.map(r => (r.destino || "").toUpperCase().trim());
 
-            btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Analisando Clientes Base...`;
-            
-            const clientesIn = [];
-            const clientesOut = []; 
-            const clientesErro = []; 
-            
-            // Bloqueia as entregas principais para não repetirem como "Radar IA"
-            const nomesEntregasOficiais = romaneio.map(r => (r.destino || "").toUpperCase().trim());
+                for (const cli of clientesBase) {
+                    if(!cli) continue; 
+                    const cliName = cli.nome ? String(cli.nome).toUpperCase().trim() : "";
+                    if(cliName && nomesEntregasOficiais.includes(cliName)) continue; 
 
-            for (const cli of clientesBase) {
-                if(!cli || !cli.nome) continue;
-                if(nomesEntregasOficiais.includes(cli.nome.toUpperCase().trim())) continue; 
+                    const safeLatLng = getSafeLatLng(cli.lat, cli.lng);
 
-                // Uso o escudo matemático para saber se a Dijo é um NaN oculto
-                const safeLatLng = getSafeLatLng(cli.lat, cli.lng);
+                    if (safeLatLng !== null) {
+                        let distMinima = Infinity;
+                        for (let i = 0; i < densePath.length; i++) {
+                            const d = google.maps.geometry.spherical.computeDistanceBetween(safeLatLng, densePath[i]);
+                            if (d < distMinima) distMinima = d;
+                        }
 
-                if (safeLatLng !== null) {
-                    let distMinima = Infinity;
-                    for (let i = 0; i < densePath.length; i++) {
-                        const d = google.maps.geometry.spherical.computeDistanceBetween(safeLatLng, densePath[i]);
-                        if (d < distMinima) distMinima = d;
-                    }
-
-                    if (distMinima <= RAIO_LOGISTICO_METROS) {
-                        clientesIn.push({ ...cli, location: safeLatLng, dist: distMinima });
+                        if (distMinima <= RAIO_LOGISTICO_METROS) {
+                            clientesIn.push({ ...cli, location: safeLatLng, dist: distMinima });
+                        } else {
+                            clientesOut.push({ ...cli, location: safeLatLng, dist: distMinima });
+                        }
                     } else {
-                        clientesOut.push({ ...cli, location: safeLatLng, dist: distMinima });
+                        clientesErro.push(cli);
                     }
-                } else {
-                    // SE ENTROU AQUI, O GOOGLE MATOU AS COORDENADAS POR CAUSA DO "BUG DO ENTER".
-                    clientesErro.push(cli);
                 }
-            }
 
-            // Exibir no painel o que achou
-            btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Rota Processada com Sucesso";
-            setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Iniciar Nova Varredura"; }, 3000);
-            
-            window.renderizarRadarIntegral(clientesIn, clientesOut, clientesErro, veiculoSelecionado);
+                window.renderizarRadarSincrono(clientesIn, clientesOut, clientesErro, veiculoSelecionado);
+
+                btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Rota Processada com Sucesso";
+                setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Iniciar Nova Varredura"; }, 3000);
+                
+            } catch(e) {
+                console.error("Erro na matemática da rota:", e);
+                btn.innerHTML = "<i class='bx bx-error text-xl'></i> Erro Matemático. Tente Novamente.";
+            }
         };
 
-        window.renderizarRadarIntegral = async function(clientesIn, clientesOut, clientesErro, veiculo) {
-            const list = document.getElementById('lista-prospeccao');
+        // UI OTIMISTA SÍNCRONA: Nunca mais vai travar no "Aguardando..."
+        window.renderizarRadarSincrono = function(clientesIn, clientesOut, clientesErro, veiculo) {
+            const containerLista = document.getElementById('conteudo-lista');
             const badge = document.getElementById('badge-places');
+            const alerta = document.getElementById('alerta-sucesso');
             
             // SOMATÓRIO PARA MOSTRAR QUE ANALISOU A BASE TODA
             const totalAnalisados = clientesIn.length + clientesOut.length + clientesErro.length;
-
             if(badge) { 
-                badge.innerText = `${clientesIn.length} NA ROTA | BASE: ${totalAnalisados}`; 
+                badge.innerText = `${clientesIn.length} NA ROTA | TOTAL BASE: ${totalAnalisados}`; 
                 badge.classList.remove('hidden'); 
             }
-            
-            const radarObj = {};
-            clientesIn.forEach(c => radarObj[c.id] = c);
-            db.ref(`${DB_ROOT}/radar_ativo/${veiculo}`).set(radarObj);
+            if(alerta) {
+                alerta.classList.remove('hidden');
+                setTimeout(() => alerta.classList.add('hidden'), 4000);
+            }
 
             clientesIn.sort((a,b) => a.dist - b.dist);
             clientesOut.sort((a,b) => a.dist - b.dist);
 
             let h = '';
             
-            // 1. Clientes NA ROTA (Sucesso)
-            for (const c of clientesIn) {
-                const m = await desenharMarcador(c.location, mapRotaObj, c.nome, "https://maps.google.com/mapfiles/ms/icons/red-dot.png");
-                routeMarkers.push(m);
+            if(clientesIn.length > 0) {
+                h += `<h4 class="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] border-b-2 border-amber-200 pb-2 mb-4 mt-2"><i class='bx bx-radar'></i> Oportunidades na Rota (${clientesIn.length})</h4>`;
                 
-                const escN = c.nome.replace(/'/g, "\\'"); 
-                const escA = (c.end || c.cid).replace(/'/g, "\\'"); 
-                const telefoneReal = c.tel || '';
-                const distKmVis = (c.dist / 1000).toFixed(1);
+                for (const c of clientesIn) {
+                    const rawName = c.nome ? String(c.nome) : "Cliente Desconhecido";
+                    const rawAddress = (c.end || c.cid) ? String(c.end || c.cid) : "Endereço não informado";
+                    
+                    const escN = rawName.replace(/'/g, "\\'"); 
+                    const escA = rawAddress.replace(/'/g, "\\'"); 
+                    const telefoneReal = c.tel ? String(c.tel) : '';
+                    const distKmVis = (c.dist / 1000).toFixed(1);
 
+                    h += `
+                    <div class="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm border-l-4 border-amber-400 hover:shadow-xl transition mb-4 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-2 relative z-10">
+                            <h4 class="font-black text-slate-800 text-xs uppercase leading-tight w-3/4">${rawName}</h4>
+                            <span class="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black whitespace-nowrap">${distKmVis} KM</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 font-bold mb-4 leading-tight relative z-10"><i class='bx bx-map text-red-500'></i> ${rawAddress}</p>
+                        <button onclick="window.abrirPitchIA('${escN}','${escA}','${telefoneReal}')" class="w-full bg-slate-900 text-amber-500 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center relative z-10"><i class='bx bx-brain text-sm'></i> Abordagem IA</button>
+                    </div>`;
+                }
+            } else {
                 h += `
-                <div class="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm border-l-4 border-amber-400 hover:shadow-xl transition mb-4">
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-black text-slate-800 text-xs uppercase leading-tight">${c.nome}</h4>
-                        <span class="text-[8px] bg-amber-100 text-amber-600 px-1 rounded font-black">OPORTUNIDADE (${distKmVis} KM)</span>
-                    </div>
-                    <p class="text-[10px] text-slate-500 font-bold mb-4 leading-tight"><i class='bx bx-map text-red-500'></i> ${c.end || c.cid}</p>
-                    <button onclick="window.abrirPitchIA('${escN}','${escA}','${telefoneReal}')" class="w-full bg-slate-900 text-amber-500 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center"><i class='bx bx-brain'></i> Formular Venda IA</button>
+                <div class="bg-slate-100 p-6 rounded-2xl text-center mb-6 border border-slate-200">
+                    <i class='bx bx-ghost text-4xl text-slate-300 mb-2'></i>
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest">Nenhuma loja da base<br>no raio de 15km da rota.</p>
                 </div>`;
             }
 
-            // 2. Clientes com ERRO DE GPS (A VERDADE EXPOSTA!)
-            for (const c of clientesErro) {
-                h += `
-                <div class="bg-red-50 p-4 border border-red-200 rounded-xl shadow-sm mb-4 border-l-4 border-red-600">
-                    <div class="flex justify-between items-start mb-1">
-                        <h4 class="font-black text-red-800 text-xs uppercase leading-tight">${c.nome}</h4>
-                        <span class="text-[8px] bg-red-200 text-red-800 px-1 rounded font-black">FALHA GPS</span>
-                    </div>
-                    <p class="text-[9px] text-red-600 font-bold leading-tight">O sistema bloqueou um crash! O endereço deste cliente está corrompido no banco de dados. Apague-o em 'Lojas & Clientes' e recadastre selecionando obrigatoriamente a sugestão da Google.</p>
-                </div>`;
-            }
-
-            // 3. Clientes FORA DA ROTA (Se não apareceu na Oportunidade, mostra onde o Google os jogou)
-            for (const c of clientesOut) {
-                const distKm = Math.round(c.dist / 1000);
-                const m = await desenharMarcador(c.location, mapRotaObj, `${c.nome} (Longe da Rota: ${distKm}km)`, "https://maps.google.com/mapfiles/ms/icons/blue-dot.png");
-                routeMarkers.push(m);
-
-                h += `
-                <div class="bg-slate-100 p-4 border border-slate-200 rounded-xl shadow-sm mb-4 opacity-75">
-                    <div class="flex justify-between items-start mb-1">
-                        <h4 class="font-black text-slate-500 text-xs uppercase leading-tight">${c.nome}</h4>
-                        <span class="text-[8px] bg-slate-200 text-slate-600 px-1 rounded font-black">A ${distKm} KM DA ROTA</span>
-                    </div>
-                    <p class="text-[9px] text-slate-400 font-bold leading-tight truncate"><i class='bx bx-map'></i> ${c.end || c.cid}</p>
-                </div>`;
-            }
-
-            if(list) {
-                if(h === '') {
-                    list.innerHTML = "<p class='text-center p-12 opacity-30 font-black uppercase text-xs'>Sua base de dados não contém nenhum outro cliente além dos que estão nas notas.</p>";
-                } else {
-                    list.innerHTML = h;
+            if (clientesErro.length > 0) {
+                h += `<h4 class="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] border-b-2 border-red-200 pb-2 mb-4 mt-6"><i class='bx bx-error'></i> Clientes Sem GPS (${clientesErro.length})</h4>`;
+                for (const c of clientesErro) {
+                    const rawName = c.nome ? String(c.nome) : "Cadastro em Branco";
+                    h += `
+                    <div class="bg-red-50 p-4 border border-red-200 rounded-xl shadow-sm mb-4 border-l-4 border-red-600">
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="font-black text-red-800 text-xs uppercase leading-tight">${rawName}</h4>
+                        </div>
+                        <p class="text-[9px] text-red-600 font-bold leading-tight">Ignorado pelo radar pois o cadastro não possui coordenadas GPS válidas. Edite e use o buscador do Google.</p>
+                    </div>`;
                 }
             }
+
+            if(clientesOut.length > 0) {
+                h += `<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4 mt-6"><i class='bx bx-block'></i> Longe da Rota (${clientesOut.length})</h4>`;
+                for (const c of clientesOut) {
+                    const distKm = Math.round(c.dist / 1000);
+                    const rawName = c.nome ? String(c.nome) : "Cliente";
+                    const rawAddress = (c.end || c.cid) ? String(c.end || c.cid) : "Endereço não informado";
+
+                    h += `
+                    <div class="bg-slate-100 p-4 border border-slate-200 rounded-xl mb-3 opacity-75">
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="font-black text-slate-500 text-[10px] uppercase leading-tight">${rawName}</h4>
+                            <span class="text-[8px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-black">${distKm} KM DE DISTÂNCIA</span>
+                        </div>
+                        <p class="text-[9px] text-slate-400 font-bold leading-tight truncate"><i class='bx bx-map'></i> ${rawAddress}</p>
+                    </div>`;
+                }
+            }
+
+            if(containerLista) {
+                containerLista.innerHTML = h;
+            }
+
+            setTimeout(async () => {
+                try {
+                    if(veiculo) {
+                        const veiculoSeguro = String(veiculo).replace(/[.#$\[\]]/g, '_'); 
+                        const radarObj = {};
+                        clientesIn.forEach(c => {
+                            radarObj[c.id] = {
+                                nome: c.nome ? String(c.nome) : "Desconhecido",
+                                end: (c.end || c.cid) ? String(c.end || c.cid) : "Não informado",
+                                lat: c.lat || 0,
+                                lng: c.lng || 0
+                            };
+                        });
+                        
+                        if (Object.keys(radarObj).length > 0) {
+                            await db.ref(`${DB_ROOT}/radar_ativo/${veiculoSeguro}`).set(radarObj);
+                        } else {
+                            await db.ref(`${DB_ROOT}/radar_ativo/${veiculoSeguro}`).remove();
+                        }
+                    }
+
+                    for (const c of clientesIn) {
+                        const m = await desenharMarcador(c.location, mapRotaObj, c.nome, "https://maps.google.com/mapfiles/ms/icons/red-dot.png");
+                        routeMarkers.push(m);
+                    }
+                    for (const c of clientesOut) {
+                        const distKm = Math.round(c.dist / 1000);
+                        const m = await desenharMarcador(c.location, mapRotaObj, `${c.nome} (Longe da Rota: ${distKm}km)`, "https://maps.google.com/mapfiles/ms/icons/blue-dot.png");
+                        routeMarkers.push(m);
+                    }
+                } catch(e) {
+                    console.error("Aviso do processo Background:", e);
+                }
+            }, 50); 
         };
 
         window.abrirPitchIA = function(n, l, t) {
@@ -1190,7 +1235,13 @@
         function carregarMecanismoAdmin() {
             db.ref(`${DB_ROOT}/clientes`).on('value', snap => {
                 let h = ''; let cCount = 0;
-                snap.forEach(c => { cCount++; const d = c.val(); h += `<tr class="hover:bg-slate-50 transition border-b"><td class="p-4 font-black text-slate-800 text-xs uppercase">${d.nome}</td><td class="p-4 text-xs font-bold text-slate-600">${d.tel}</td><td class="p-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">${d.cid}</td><td class="p-4 text-center"><button onclick="window.excluir('clientes', '${c.key}')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`; });
+                snap.forEach(c => { 
+                    cCount++; 
+                    const d = c.val(); 
+                    // Novo Escudo visual de GPS na tabela de clientes
+                    const geoBadge = (d.lat && d.lng) ? `<i class='bx bx-check-shield text-green-500 text-sm ml-1' title='GPS OK'></i>` : `<i class='bx bx-error-circle text-red-500 text-sm ml-1' title='Falta GPS'></i>`;
+                    h += `<tr class="hover:bg-slate-50 transition border-b"><td class="p-4 font-black text-slate-800 text-xs uppercase flex items-center">${d.nome} ${geoBadge}</td><td class="p-4 text-xs font-bold text-slate-600">${d.tel}</td><td class="p-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">${d.cid}</td><td class="p-4 text-center"><button onclick="window.excluir('clientes', '${c.key}')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`; 
+                });
                 const lc = document.getElementById('lista-clientes'); if(lc) lc.innerHTML = h;
                 const dc = document.getElementById('dash-clientes'); if(dc) dc.innerText = cCount;
             });
@@ -1469,7 +1520,8 @@
                 
                 const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
                 const clientesBase = [];
-                clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
+                // BUG CORRIGIDO AQUI TAMBÉM NO APP DO MOTORISTA: as chaves `{ }` evitam que o loop aborte!
+                clSnap.forEach(c => { clientesBase.push({...c.val(), id: c.key}); });
 
                 const deliveryPoints = [];
                 
@@ -1610,7 +1662,7 @@
                             rSnap.forEach(v => {
                                 temVisitas = true;
                                 const cli = v.val();
-                                const escN = cli.nome.replace(/'/g, "\\'");
+                                const escN = (cli.nome || "").replace(/'/g, "\\'");
                                 htmlVisitas += `
                                 <div class="bg-slate-800 p-5 rounded-3xl border border-slate-700 shadow-xl mb-4 border-l-4 border-l-amber-500">
                                     <p class="text-white font-black text-sm uppercase mb-1">${cli.nome}</p>
