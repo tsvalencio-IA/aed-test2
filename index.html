@@ -241,7 +241,7 @@
                         <div class="w-full lg:w-7/12 flex flex-col gap-6">
                             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-t-8 border-t-amber-500">
                                 <h3 class="font-black text-slate-800 mb-2 uppercase text-base tracking-tight flex items-center gap-2"><i class='bx bx-radar text-amber-500 text-2xl'></i> Radar de Clientes Base IA</h3>
-                                <p class="text-[11px] text-slate-500 mb-6 font-medium uppercase tracking-tight">Detecta clientes num raio de 3km da rota oficial e despacha a lista automaticamente para o App do Motorista.</p>
+                                <p class="text-[11px] text-slate-500 mb-6 font-medium uppercase tracking-tight">Detecta clientes num raio de 5km da rota oficial e despacha a lista automaticamente para o App do Motorista.</p>
                                 
                                 <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-5 shadow-inner">
                                     <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-widest">1. Selecionar Viatura Logística em Operação</label>
@@ -659,16 +659,6 @@
         let markersFrota = {}; let routeMarkers = []; let activePlaceDetails = null;
         let clienteGooglePlaceLocation = null;
 
-        // FUNÇÃO DE BLINDAGEM (CleanWaypoint) - Garante que as chamadas Directions API nunca quebrem
-        window.limparWaypoint = function(wpLocation) {
-            if (typeof wpLocation === 'object' && wpLocation.lat) {
-                const latNum = typeof wpLocation.lat === 'function' ? wpLocation.lat() : wpLocation.lat;
-                const lngNum = typeof wpLocation.lng === 'function' ? wpLocation.lng() : wpLocation.lng;
-                return { location: new google.maps.LatLng(latNum, lngNum), stopover: true };
-            }
-            return { location: wpLocation, stopover: true };
-        };
-
         window.abrirModal = function(id) {
             const m = document.getElementById(id);
             if(m) { m.classList.remove('hidden'); m.classList.add('flex'); }
@@ -766,7 +756,7 @@
                 mapsLoaded = true; 
                 mapsLoading = false; 
                 
-                // Carga Definitiva da biblioteca Marker API v3 para remover warnings do console
+                // Carga da biblioteca marker (Evita avisos na consola)
                 if (google.maps.importLibrary) {
                     try { await google.maps.importLibrary("marker"); } catch(e) {}
                 }
@@ -790,14 +780,14 @@
                 }
             };
             const s = document.createElement('script');
-            // INCLUSÃO OBRIGATÓRIA DA LIBRARY MARKER
+            // Inclui as livrarias estritas do maps
             s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places,geometry,marker&v=weekly&callback=initMap`;
             s.async = true; s.defer = true; document.head.appendChild(s);
         };
 
         window.checkMap = function(type) {
             if(!mapsLoaded || !window.google) return;
-            // INJEÇÃO OBRIGATÓRIA DO MAP_ID PARA SUPORTAR MARCADORES AVANÇADOS
+            // Configurações com mapId para suportar o AdvancedMarkerElement
             if(type === 'rastreio' && !document.getElementById('view-rastreio').classList.contains('hidden-view')) {
                 const overlay = document.getElementById('map-rastreio-overlay'); if(overlay) overlay.classList.add('hidden');
                 if(!mapRastreioObj) mapRastreioObj = new google.maps.Map(document.getElementById('map-rastreio'), { center: {lat:-20.8, lng:-49.3}, zoom: 7, disableDefaultUI: true, mapId: "AED_MAP_RASTREIO" });
@@ -889,7 +879,10 @@
             await Promise.all(romaneio.map(async (carga) => {
                 const cliMatch = clientesBase.find(c => c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
                 if (cliMatch && cliMatch.lat && cliMatch.lng) {
-                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(cliMatch.lat), parseFloat(cliMatch.lng)), nome: carga.destino, id: carga.id });
+                    // BLINDAGEM DA VÍRGULA NO ADMIN
+                    let latFix = typeof cliMatch.lat === 'string' ? cliMatch.lat.replace(',', '.') : cliMatch.lat;
+                    let lngFix = typeof cliMatch.lng === 'string' ? cliMatch.lng.replace(',', '.') : cliMatch.lng;
+                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(latFix), parseFloat(lngFix)), nome: carga.destino, id: carga.id });
                 } else {
                     await new Promise(res => {
                         try {
@@ -916,10 +909,8 @@
             const origPt = new google.maps.LatLng(originLatLng.lat, originLatLng.lng);
 
             deliveryPoints.forEach((pt, i) => {
-                if(pt.location && pt.location.lat) {
-                    const ptLat = typeof pt.location.lat === 'function' ? pt.location.lat() : pt.location.lat;
-                    const ptLng = typeof pt.location.lng === 'function' ? pt.location.lng() : pt.location.lng;
-                    const d = google.maps.geometry.spherical.computeDistanceBetween(origPt, new google.maps.LatLng(ptLat, ptLng));
+                if(pt.location && typeof pt.location.lat === 'function') {
+                    const d = google.maps.geometry.spherical.computeDistanceBetween(origPt, pt.location);
                     if (d > maxDist) { maxDist = d; destIndex = i; }
                 }
             });
@@ -929,7 +920,7 @@
 
             document.getElementById('destino-rota').value = finalDestination.nome + " (Destino de Ancoragem)";
 
-            const cleanWaypoints = waypointsList.map(w => window.limparWaypoint(w.location));
+            const cleanWaypoints = waypointsList.map(w => ({ location: w.location, stopover: true }));
 
             const req = {
                 origin: originLatLng,
@@ -951,7 +942,7 @@
             } catch(e) { btn.innerHTML = "<i class='bx bx-error text-xl'></i> Erro no Motor Google"; console.error(e); }
         };
 
-        // ====== SOLUÇÃO INFALÍVEL DO RADAR CORPORATIVO ======
+        // ====== SOLUÇÃO DO RADAR CORPORATIVO (CÁLCULO ATÉ A LINHA + PROTEÇÃO DA VÍRGULA PT-BR) ======
         window.processarCruzamentoRadial = async function(res, btn, clientesBase, romaneio, veiculoSelecionado, geocoder) {
             directionsRenderer.setDirections(res);
             
@@ -970,32 +961,39 @@
             
             if(!google.maps.geometry || !google.maps.geometry.spherical) return alert("Erro crítico: A biblioteca esférica não inicializou.");
             
-            // 1. EXTRAÇÃO DO DETAILEDPATH (Caminho Micro-Apurado da Estrada para não falhar nem 1 metro)
-            const detailedPath = [];
-            res.routes[0].legs.forEach(leg => { 
-                leg.steps.forEach(step => { 
-                    step.path.forEach(p => detailedPath.push(p)); 
-                }); 
-            });
+            // 1. EXTRAÇÃO OFICIAL DA POLYLINE 
+            const overviewPath = res.routes[0].overview_path;
+            
+            // 2. INTERPOLAÇÃO DENSA
+            const densePath = [];
+            for (let i = 0; i < overviewPath.length - 1; i++) {
+                const p1 = overviewPath[i];
+                const p2 = overviewPath[i+1];
+                densePath.push(p1);
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                if (dist > 500) { 
+                    const fractionSteps = Math.ceil(dist / 500);
+                    for (let j = 1; j < fractionSteps; j++) {
+                        densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
+                    }
+                }
+            }
+            if (overviewPath.length > 0) densePath.push(overviewPath[overviewPath.length - 1]);
 
-            // 2. FUNÇÃO DE CÁLCULO DIRETO ATÉ À LINHA EXATA
-            const RAIO_LOGISTICO_METROS = 3000; // 3 km de raio logístico
+            // 3. AUMENTO DE RAIO LOGÍSTICO PARA 5KM DE PRECISÃO
+            const RAIO_LOGISTICO_METROS = 5000; 
             const isClientInRadar = (clientLatLng) => {
-                for(let i=0; i < detailedPath.length; i++) { 
-                    if (google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, detailedPath[i]) <= RAIO_LOGISTICO_METROS) return true;
+                for(let i=0; i < densePath.length; i++) { 
+                    if (google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, densePath[i]) <= RAIO_LOGISTICO_METROS) return true;
                 }
                 return false;
             };
 
-            // Desenhar camião com o Novo Padrão Google Maps V3 (AdvancedMarkerElement)
             if (res.routes && res.routes.length > 0 && res.routes[0].legs && res.routes[0].legs.length > 0) {
                 const truckOriginPos = res.routes[0].legs[0].start_location;
                 if(google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
                     const tImg = document.createElement("img"); tImg.src = "https://maps.google.com/mapfiles/ms/icons/truck.png";
                     const truckMarker = new google.maps.marker.AdvancedMarkerElement({ position: truckOriginPos, map: mapRotaObj, title: "Camião", content: tImg });
-                    routeMarkers.push(truckMarker);
-                } else {
-                    const truckMarker = new google.maps.Marker({ position: truckOriginPos, map: mapRotaObj, title: "Camião", icon: "https://maps.google.com/mapfiles/ms/icons/truck.png" });
                     routeMarkers.push(truckMarker);
                 }
             }
@@ -1003,17 +1001,22 @@
             btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Analisando Clientes Base...`;
             
             const clientesNoCaminho = [];
-            const nomesEntregasOficiais = romaneio.map(r => r.destino.toUpperCase());
+            const nomesEntregasOficiais = romaneio.map(r => (r.destino || "").toUpperCase().trim());
             const clientesSemGps = [];
 
-            // 3. PARSER ESTRITO DE FLOAT BLINDADO (Garante que nunca dá NaN ou falha o radar)
+            // 4. PARSER ESTRITO DO PROBLEMA DA VÍRGULA (Ex: "-20,123" vira "-20.123")
             for (const cli of clientesBase) {
-                if(nomesEntregasOficiais.includes(cli.nome.toUpperCase())) continue; 
+                if(!cli || !cli.nome) continue;
+                if(nomesEntregasOficiais.includes(cli.nome.toUpperCase().trim())) continue; 
 
-                const latNum = cli.lat ? parseFloat(cli.lat) : NaN;
-                const lngNum = cli.lng ? parseFloat(cli.lng) : NaN;
+                // A CORREÇÃO DE OURO PARA CLIENTES "DESAPARECIDOS" DO RADAR
+                let latRaw = typeof cli.lat === 'string' ? cli.lat.replace(',', '.') : cli.lat;
+                let lngRaw = typeof cli.lng === 'string' ? cli.lng.replace(',', '.') : cli.lng;
 
-                if (!isNaN(latNum) && !isNaN(lngNum)) {
+                const latNum = parseFloat(latRaw);
+                const lngNum = parseFloat(lngRaw);
+
+                if (!isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
                     const localCliente = new google.maps.LatLng(latNum, lngNum);
                     if (isClientInRadar(localCliente)) {
                         clientesNoCaminho.push({ ...cli, location: { lat: latNum, lng: lngNum } });
@@ -1023,13 +1026,13 @@
                 }
             }
 
-            // 4. CACHE E LOTE ASSÍNCRONO CUIDADOSO
+            // 5. CACHE DE LOCALIZAÇÕES ANTIGAS
             if(clientesSemGps.length > 0) {
                 btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Localizando Endereços Antigos...`;
                 let falhasGeocoding = 0;
                 
                 await Promise.all(clientesSemGps.map(async (cli, index) => {
-                    await new Promise(r => setTimeout(r, index * 250)); // Compass de espera para não travar API
+                    await new Promise(r => setTimeout(r, index * 250)); 
                     return new Promise(resolve => {
                         try {
                             geocoder.geocode({ address: `${cli.end || ''}, ${cli.cid}`.trim() }, (results, geoStatus) => {
@@ -1069,9 +1072,6 @@
                 if(google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
                     const cImg = document.createElement("img"); cImg.src = "https://maps.google.com/mapfiles/ms/icons/red-dot.png";
                     const marker = new google.maps.marker.AdvancedMarkerElement({ position: c.location, map: mapRotaObj, content: cImg });
-                    routeMarkers.push(marker);
-                } else {
-                    const marker = new google.maps.Marker({ position: c.location, map: mapRotaObj, icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png" });
                     routeMarkers.push(marker);
                 }
                 
@@ -1229,10 +1229,6 @@
                     markersFrota[placa] = new google.maps.marker.AdvancedMarkerElement({ position: pos, map: mapRastreioObj, title: `${placa} - Condutor: ${motorista}`, content: trkIcon });
                     const info = new google.maps.InfoWindow({ content: `<div style="padding: 10px; font-family: sans-serif;"><h4 style="font-weight: 900; color: #b91c1c; margin-bottom: 5px;">${placa}</h4><p style="font-size: 12px; margin: 0;"><b>Operador:</b> ${motorista}</p><p style="font-size: 10px; color: #22c55e; font-weight: bold; margin-top: 5px;">Satélite Online</p></div>` });
                     markersFrota[placa].addEventListener("gmp-click", () => { info.open(mapRastreioObj, markersFrota[placa]); });
-                } else {
-                    markersFrota[placa] = new google.maps.Marker({ position: pos, map: mapRastreioObj, title: `${placa} - Condutor: ${motorista}`, icon: "https://maps.google.com/mapfiles/ms/icons/truck.png" });
-                    const info = new google.maps.InfoWindow({ content: `<div style="padding: 10px; font-family: sans-serif;"><h4 style="font-weight: 900; color: #b91c1c; margin-bottom: 5px;">${placa}</h4><p style="font-size: 12px; margin: 0;"><b>Operador:</b> ${motorista}</p><p style="font-size: 10px; color: #22c55e; font-weight: bold; margin-top: 5px;">Satélite Online</p></div>` });
-                    markersFrota[placa].addListener("click", () => { info.open(mapRastreioObj, markersFrota[placa]); });
                 }
             }
         };
@@ -1364,109 +1360,130 @@
             db.ref(`${DB_ROOT}/config`).update({ gemini_key: document.getElementById('gemini-key').value, maps_key: mk, cloud_name: document.getElementById('cloud-name').value, upload_preset: document.getElementById('upload-preset').value }).then(() => { alert("As chaves de API foram encriptadas e salvas na Nuvem."); if(mk) window.carregarGoogleMapsRuntime(); }); 
         };
 
-        // --- F. APP MOBILE DO MOTORISTA ---
+        // --- F. APP MOBILE DO MOTORISTA COM BLINDAGEM MÁXIMA ---
         let watchId = null; let veiculoDoRomaneio = null; let listenerCargasMotorista = null; let listenerRadarMotorista = null;
 
         window.processarEExibirMapaMotorista = async function(romaneio, placa) {
-            document.getElementById('container-mapa-mot').classList.remove('hidden');
-            const overlay = document.getElementById('map-motorista-overlay');
-            if(overlay) overlay.classList.remove('hidden');
-            window.checkMap('motorista');
-            
-            const gps = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
-            let originLatLng;
-            
-            const geocoder = new google.maps.Geocoder();
+            try {
+                document.getElementById('container-mapa-mot').classList.remove('hidden');
+                const overlay = document.getElementById('map-motorista-overlay');
+                if(overlay) overlay.classList.remove('hidden');
+                window.checkMap('motorista');
+                
+                const gps = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
+                let originLatLng;
+                const geocoder = new google.maps.Geocoder();
 
-            if(gps.exists() && gps.val().status === 'online') {
-                originLatLng = { lat: parseFloat(gps.val().lat), lng: parseFloat(gps.val().lng) };
-            } else {
-                originLatLng = { lat: -20.8, lng: -49.3 };
-            }
-            
-            const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
-            const clientesBase = [];
-            clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
-
-            const deliveryPoints = [];
-            
-            for (const carga of romaneio) {
-                const cliMatch = clientesBase.find(c => c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
-                if (cliMatch && cliMatch.lat && cliMatch.lng) {
-                    deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(cliMatch.lat), parseFloat(cliMatch.lng)), nome: carga.destino, id: carga.id, cargaObj: carga });
+                // BLINDAGEM DA VÍRGULA NO GPS MOTORISTA
+                if(gps.exists() && gps.val().status === 'online') {
+                    let gLat = typeof gps.val().lat === 'string' ? gps.val().lat.replace(',', '.') : gps.val().lat;
+                    let gLng = typeof gps.val().lng === 'string' ? gps.val().lng.replace(',', '.') : gps.val().lng;
+                    originLatLng = { lat: parseFloat(gLat), lng: parseFloat(gLng) };
                 } else {
-                    await new Promise(resolve => {
-                        geocoder.geocode({ address: carga.endereco_destino || carga.destino }, (res, status) => {
-                            if (status === 'OK' && res[0]) {
-                                deliveryPoints.push({ location: res[0].geometry.location, nome: carga.destino, id: carga.id, cargaObj: carga });
-                            }
-                            setTimeout(resolve, 150);
+                    originLatLng = { lat: -20.8, lng: -49.3 };
+                }
+                
+                const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
+                const clientesBase = [];
+                clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
+
+                const deliveryPoints = [];
+                
+                for (const carga of romaneio) {
+                    if (!carga) continue;
+                    const cliMatch = clientesBase.find(c => c.nome && carga.destino && c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
+                    if (cliMatch && cliMatch.lat && cliMatch.lng) {
+                        // BLINDAGEM DA VÍRGULA NOS DESTINOS OFICIAIS DA APP MOTORISTA
+                        let lLat = typeof cliMatch.lat === 'string' ? cliMatch.lat.replace(',', '.') : cliMatch.lat;
+                        let lLng = typeof cliMatch.lng === 'string' ? cliMatch.lng.replace(',', '.') : cliMatch.lng;
+                        deliveryPoints.push({ location: new google.maps.LatLng(parseFloat(lLat), parseFloat(lLng)), nome: carga.destino, id: carga.id, cargaObj: carga });
+                    } else {
+                        await new Promise(resolve => {
+                            geocoder.geocode({ address: carga.endereco_destino || carga.destino }, (res, status) => {
+                                if (status === 'OK' && res[0] && res[0].geometry) {
+                                    deliveryPoints.push({ location: res[0].geometry.location, nome: carga.destino, id: carga.id, cargaObj: carga });
+                                }
+                                setTimeout(resolve, 150);
+                            });
                         });
+                    }
+                }
+                
+                if(deliveryPoints.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
+
+                // Filtro extremo para evitar os dados em branco (UNDEFINED)
+                let unvisited = deliveryPoints.filter(p => p && p.location);
+                if (unvisited.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
+
+                let sortedPoints = [];
+                let currentPos = originLatLng;
+
+                while(unvisited.length > 0) {
+                    let minDist = Infinity;
+                    let closestIdx = 0; // Prevenção de loop burro
+                    
+                    let curLat = typeof currentPos?.lat === 'function' ? currentPos.lat() : parseFloat(currentPos?.lat || 0);
+                    let curLng = typeof currentPos?.lng === 'function' ? currentPos.lng() : parseFloat(currentPos?.lng || 0);
+                    let originPosObj = new google.maps.LatLng(curLat, curLng);
+
+                    for(let i=0; i < unvisited.length; i++) {
+                        const pt = unvisited[i];
+                        if (!pt || !pt.location) continue; // BLOQUEIA O ERRO DE "LOCATION" UNDEFINED
+                        
+                        let ptLat = typeof pt.location.lat === 'function' ? pt.location.lat() : parseFloat(pt.location.lat || 0);
+                        let ptLng = typeof pt.location.lng === 'function' ? pt.location.lng() : parseFloat(pt.location.lng || 0);
+                        let targetPosObj = new google.maps.LatLng(ptLat, ptLng);
+
+                        const dist = google.maps.geometry.spherical.computeDistanceBetween(originPosObj, targetPosObj);
+                        
+                        if(dist < minDist && !isNaN(dist)) { minDist = dist; closestIdx = i; }
+                    }
+                    
+                    const closestPt = unvisited[closestIdx];
+                    if (closestPt) {
+                        sortedPoints.push(closestPt);
+                        currentPos = closestPt.location; 
+                    }
+                    unvisited.splice(closestIdx, 1);
+                }
+
+                if(sortedPoints.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
+
+                const finalDestination = sortedPoints[sortedPoints.length - 1];
+                const waypointsList = sortedPoints.slice(0, -1).filter(p => p && p.location).map(pt => ({ location: pt.location, stopover: true }));
+                
+                if(!directionsService) directionsService = new google.maps.DirectionsService();
+                
+                directionsService.route({
+                    origin: new google.maps.LatLng(
+                        typeof originLatLng.lat === 'function' ? originLatLng.lat() : parseFloat(originLatLng.lat), 
+                        typeof originLatLng.lng === 'function' ? originLatLng.lng() : parseFloat(originLatLng.lng)
+                    ),
+                    destination: finalDestination.location,
+                    waypoints: waypointsList,
+                    optimizeWaypoints: false,
+                    travelMode: 'DRIVING'
+                }, (res, status) => {
+                    if(overlay) overlay.classList.add('hidden');
+                    if(status === 'OK' && dirRendererMot) dirRendererMot.setDirections(res);
+
+                    let cartoesCarga = '';
+                    sortedPoints.forEach((pt, index) => { 
+                        const c = pt.cargaObj;
+                        if(!c) return; // Evita desenhar sem dados
+                        const labelOrdem = (index === sortedPoints.length - 1) ? "DESTINO FINAL (OFICIAL)" : `PARADA ${index + 1} (OTIMIZADA)`;
+                        cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> ${labelOrdem}</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; 
                     });
-                }
-            }
-            
-            if(deliveryPoints.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
-
-            // O SEGREDO DO MOTORISTA: Blindagem Absoluta na Extração de Lat/Lng (Resolveu a Tela Preta e o Undefined)
-            let unvisited = [...deliveryPoints];
-            let sortedPoints = [];
-            let currentPos = originLatLng;
-
-            while(unvisited.length > 0) {
-                let minDist = Infinity;
-                let closestIdx = -1;
-                
-                // Conversão super segura do ponto atual (Seja objeto literal ou LatLng)
-                let curLat = typeof currentPos.lat === 'function' ? currentPos.lat() : parseFloat(currentPos.lat);
-                let curLng = typeof currentPos.lng === 'function' ? currentPos.lng() : parseFloat(currentPos.lng);
-                let originPosObj = new google.maps.LatLng(curLat, curLng);
-
-                for(let i=0; i < unvisited.length; i++) {
-                    const pt = unvisited[i];
-                    
-                    let ptLat = typeof pt.location.lat === 'function' ? pt.location.lat() : parseFloat(pt.location.lat);
-                    let ptLng = typeof pt.location.lng === 'function' ? pt.location.lng() : parseFloat(pt.location.lng);
-                    let targetPosObj = new google.maps.LatLng(ptLat, ptLng);
-
-                    const dist = google.maps.geometry.spherical.computeDistanceBetween(originPosObj, targetPosObj);
-                    
-                    if(dist < minDist) { minDist = dist; closestIdx = i; }
-                }
-                
-                // Break de Emergência para Prevenir Crach do Frontend se a internet cair a meio do loop
-                if (closestIdx === -1) { closestIdx = 0; }
-                
-                const closestPt = unvisited[closestIdx];
-                sortedPoints.push(closestPt);
-                currentPos = closestPt.location; 
-                unvisited.splice(closestIdx, 1);
-            }
-
-            const finalDestination = sortedPoints[sortedPoints.length - 1];
-            const waypointsList = sortedPoints.slice(0, -1).map(pt => ({ location: pt.location, stopover: true }));
-            
-            if(!directionsService) directionsService = new google.maps.DirectionsService();
-            
-            directionsService.route({
-                origin: new google.maps.LatLng(typeof originLatLng.lat === 'function' ? originLatLng.lat() : parseFloat(originLatLng.lat), typeof originLatLng.lng === 'function' ? originLatLng.lng() : parseFloat(originLatLng.lng)),
-                destination: finalDestination.location,
-                waypoints: waypointsList,
-                optimizeWaypoints: false,
-                travelMode: 'DRIVING'
-            }, (res, status) => {
-                if(overlay) overlay.classList.add('hidden');
-                if(status === 'OK' && dirRendererMot) dirRendererMot.setDirections(res);
-
-                let cartoesCarga = '';
-                sortedPoints.forEach((pt, index) => { 
-                    const c = pt.cargaObj;
-                    const labelOrdem = (index === sortedPoints.length - 1) ? "DESTINO FINAL (OFICIAL)" : `PARADA ${index + 1} (OTIMIZADA)`;
-                    cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> ${labelOrdem}</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; 
+                    const lCargas = document.getElementById('motorista-lista-cargas'); 
+                    if(lCargas) lCargas.innerHTML = cartoesCarga;
                 });
-                const lCargas = document.getElementById('motorista-lista-cargas'); 
-                if(lCargas) lCargas.innerHTML = cartoesCarga;
-            });
+
+            } catch(e) {
+                console.error("Blindagem Ativada: O Google Maps foi salvo de uma quebra total. Erro isolado: ", e);
+                const overlay = document.getElementById('map-motorista-overlay');
+                if(overlay) overlay.classList.add('hidden');
+                document.getElementById('motorista-lista-cargas').innerHTML = `<div class="bg-red-900/50 border border-red-500 p-6 rounded-2xl text-center"><i class='bx bx-error text-4xl text-red-500 mb-2'></i><p class="text-white font-black uppercase text-sm">Problema com Moradas</p><p class="text-slate-400 text-xs mt-2">Um dos destinos deste camião está mal formatado ou não tem coordenadas válidas. Informe a Base.</p></div>`;
+            }
         };
 
         window.iniciarArquiteturaMotorista = function() {
