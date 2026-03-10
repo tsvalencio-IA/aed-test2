@@ -92,7 +92,7 @@
 
     <!-- ================= 3. PAINEL GESTOR / ADMIN ================= -->
     <div id="admin-view" class="hidden-view flex w-full h-full">
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR LOGÍSTICO -->
         <aside id="sidebar-menu" class="w-64 bg-slate-900 text-white flex flex-col transition-all duration-300 z-40 shadow-2xl flex-shrink-0 hidden sm:flex">
             <div class="p-6 flex items-center gap-3 border-b border-slate-800">
                 <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-black text-lg shadow-sm transform -skew-x-6 border-b-2 border-red-600">
@@ -105,45 +105,45 @@
             </div>
 
             <nav class="flex-grow p-4 space-y-2 overflow-y-auto">
-                <button onclick="nav('dashboard')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="dashboard">
+                <button onclick="window.nav('dashboard')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="dashboard">
                     <i class='bx bxs-dashboard text-xl'></i> <span class="font-semibold text-sm">Dashboard Central</span>
                 </button>
                 
                 <div class="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-6 mb-2 px-3">Logística Ativa</div>
-                <button onclick="nav('cargas')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="cargas">
+                <button onclick="window.nav('cargas')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="cargas">
                     <i class='bx bx-package text-xl'></i> <span class="font-semibold text-sm">Romaneios / NFes</span>
                 </button>
-                <button onclick="nav('rastreio')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="rastreio">
+                <button onclick="window.nav('rastreio')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="rastreio">
                     <i class='bx bx-satellite text-xl'></i> <span class="font-semibold text-sm">Monitoramento GPS</span>
                 </button>
-                <button onclick="nav('ocorrencias')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="ocorrencias">
+                <button onclick="window.nav('ocorrencias')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="ocorrencias">
                     <i class='bx bx-receipt text-xl'></i> <span class="font-semibold text-sm">Auditoria & Custos</span>
                 </button>
-                <button onclick="nav('prospeccao')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 font-bold transition-colors border border-amber-500/30 mt-2" data-target="prospeccao">
+                <button onclick="window.nav('prospeccao')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 font-bold transition-colors border border-amber-500/30 mt-2" data-target="prospeccao">
                     <i class='bx bx-radar text-xl'></i> <span class="text-sm">Vendas no Percurso (IA)</span>
                 </button>
 
                 <div class="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-6 mb-2 px-3">Base de Dados</div>
-                <button onclick="nav('clientes')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="clientes">
+                <button onclick="window.nav('clientes')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="clientes">
                     <i class='bx bxs-store text-xl'></i> <span class="font-semibold text-sm">Lojas & Clientes</span>
                 </button>
-                <button onclick="nav('equipe')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="equipe">
+                <button onclick="window.nav('equipe')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="equipe">
                     <i class='bx bxs-user-badge text-xl'></i> <span class="font-semibold text-sm">Equipe & RH Mobile</span>
                 </button>
-                <button onclick="nav('frota')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="frota">
+                <button onclick="window.nav('frota')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="frota">
                     <i class='bx bxs-truck text-xl'></i> <span class="font-semibold text-sm">Frota Logística</span>
                 </button>
-                <button onclick="nav('oficina')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="oficina">
+                <button onclick="window.nav('oficina')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="oficina">
                     <i class='bx bx-wrench text-xl'></i> <span class="font-semibold text-sm">Oficina & Manutenção</span>
                 </button>
 
                 <div class="border-t border-slate-800 my-6"></div>
-                <button onclick="nav('config')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors" data-target="config">
+                <button onclick="window.nav('config')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors" data-target="config">
                     <i class='bx bx-cog text-xl'></i> <span class="font-semibold text-sm">Configurações & APIs</span>
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800">
-                <button onclick="fazerLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest">
+                <button onclick="window.fazerLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest">
                     <i class='bx bx-log-out'></i> Logout Sistema
                 </button>
             </div>
@@ -181,7 +181,7 @@
                         <div class="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
                         <h3 class="text-3xl font-black text-white mb-3 uppercase italic tracking-tighter">Logística de Elite AED</h3>
                         <p class="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">Gerencie frotas, monitore entregas em tempo real e utilize o Radar IA para otimizar as rotas, preenchendo o frete de retorno com clientes da sua própria base de dados.</p>
-                        <button onclick="nav('prospeccao')" class="mt-8 bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-xl transition-all hover:scale-105 uppercase text-xs tracking-widest">Ativar Radar Logístico IA</button>
+                        <button onclick="window.nav('prospeccao')" class="mt-8 bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-xl transition-all hover:scale-105 uppercase text-xs tracking-widest">Ativar Radar Logístico IA</button>
                     </div>
                 </div>
 
@@ -192,7 +192,7 @@
                             <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Despachos & Romaneios</h3>
                             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Vincule Cargas e Motoristas em Tempo Real</p>
                         </div>
-                        <button onclick="abrirModalCarga()" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition flex items-center gap-2">
+                        <button onclick="window.abrirModalCarga()" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition flex items-center gap-2">
                             <i class='bx bx-rocket text-red-600 text-lg'></i> Expedir Viagem
                         </button>
                     </div>
@@ -236,7 +236,7 @@
                     </div>
                 </div>
 
-                <!-- 5. RADAR IA INTEGRAL (COM GEOMETRIA MATEMÁTICA E PROTEÇÃO DE NULL) -->
+                <!-- 5. RADAR IA INTEGRAL -->
                 <div id="view-prospeccao" class="view-content hidden-view h-full flex flex-col gap-6 min-h-[600px]">
                     <div class="flex flex-col lg:flex-row gap-6 h-full">
                         <div class="w-full lg:w-7/12 flex flex-col gap-6">
@@ -246,7 +246,7 @@
                                 
                                 <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-5 shadow-inner">
                                     <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-widest">1. Selecionar Viatura Logística em Operação</label>
-                                    <select id="radar-veiculo" class="w-full p-4 border rounded-xl text-sm font-black focus:ring-4 focus:ring-amber-500/20 outline-none bg-white transition appearance-none" onchange="preencherRotaVeiculo()">
+                                    <select id="radar-veiculo" class="w-full p-4 border rounded-xl text-sm font-black focus:ring-4 focus:ring-amber-500/20 outline-none bg-white transition appearance-none" onchange="window.preencherRotaVeiculo()">
                                         <option value="">-- Carregando Caminhões em Rota... --</option>
                                     </select>
                                 </div>
@@ -262,7 +262,7 @@
                                     </div>
                                 </div>
 
-                                <button onclick="analisarRotaClientesBase()" id="btn-analisar-rota" class="w-full bg-slate-950 hover:bg-black transition-all text-amber-400 px-4 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex justify-center items-center gap-3 tracking-[0.2em] active:scale-95">
+                                <button onclick="window.analisarRotaClientesBase()" id="btn-analisar-rota" class="w-full bg-slate-950 hover:bg-black transition-all text-amber-400 px-4 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex justify-center items-center gap-3 tracking-[0.2em] active:scale-95">
                                     <i class='bx bx-map-pin text-xl animate-pulse'></i> Iniciar Varredura de Base Global
                                 </button>
                             </div>
@@ -295,7 +295,7 @@
                 <div id="view-clientes" class="view-content hidden-view space-y-4">
                     <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
                         <h3 class="font-black uppercase tracking-tighter text-lg text-slate-800">Base de Clientes Cadastrados</h3>
-                        <button onclick="abrirModal('modal-cliente')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition active:scale-95 flex items-center gap-2">
+                        <button onclick="window.abrirModal('modal-cliente')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition active:scale-95 flex items-center gap-2">
                             <i class='bx bx-plus-circle text-lg'></i> Nova Loja Base
                         </button>
                     </div>
@@ -318,7 +318,7 @@
                 <div id="view-equipe" class="view-content hidden-view space-y-4">
                     <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
                         <h3 class="font-black uppercase tracking-tighter text-lg text-slate-800">Recursos Humanos & RH Mobile</h3>
-                        <button onclick="abrirModal('modal-equipe')" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition active:scale-95">
+                        <button onclick="window.abrirModal('modal-equipe')" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition active:scale-95">
                             <i class='bx bxs-user-plus text-lg'></i> Admitir Colaborador
                         </button>
                     </div>
@@ -329,7 +329,7 @@
                 <div id="view-frota" class="view-content hidden-view space-y-4">
                     <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
                         <h3 class="font-black uppercase tracking-tighter text-lg text-slate-800">Parque Automotivo</h3>
-                        <button onclick="abrirModal('modal-frota')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg active:scale-95">
+                        <button onclick="window.abrirModal('modal-frota')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg active:scale-95">
                             <i class='bx bxs-truck text-lg'></i> Registar Veículo
                         </button>
                     </div>
@@ -340,7 +340,7 @@
                 <div id="view-oficina" class="view-content hidden-view space-y-4">
                     <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
                         <h3 class="font-black uppercase tracking-tighter text-lg text-slate-800">Centro de Manutenção</h3>
-                        <button onclick="abrirModalManutencao()" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg active:scale-95 flex items-center gap-2">
+                        <button onclick="window.abrirModalManutencao()" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg active:scale-95 flex items-center gap-2">
                             <i class='bx bx-wrench text-amber-500'></i> Lançar Serviço Oficina
                         </button>
                     </div>
@@ -384,7 +384,7 @@
                                     <span id="cloud-bytes-display" class="text-[9px] font-black text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100 uppercase tracking-widest">0.00 MB</span>
                                 </div>
                             </div>
-                            <button onclick="salvarConfiguracoes()" class="w-full bg-slate-950 hover:bg-black text-white p-5 rounded-2xl font-black uppercase text-xs tracking-[0.3em] shadow-2xl transition active:scale-95 flex justify-center items-center gap-2 mt-4">
+                            <button onclick="window.salvarConfiguracoes()" class="w-full bg-slate-950 hover:bg-black text-white p-5 rounded-2xl font-black uppercase text-xs tracking-[0.3em] shadow-2xl transition active:scale-95 flex justify-center items-center gap-2 mt-4">
                                 <i class='bx bx-lock-alt text-lg'></i> Criptografar e Salvar no Banco
                             </button>
                         </div>
@@ -401,7 +401,7 @@
                 <h2 class="font-black text-2xl text-red-600 tracking-tighter italic">AED LOG</h2>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Motorista: <span id="mot-nome-display" class="text-white">...</span></p>
             </div>
-            <button onclick="fazerLogout()" class="bg-slate-800 p-2.5 rounded-lg border border-slate-700 active:scale-90 transition shadow-lg">
+            <button onclick="window.fazerLogout()" class="bg-slate-800 p-2.5 rounded-lg border border-slate-700 active:scale-90 transition shadow-lg">
                 <i class='bx bx-log-out text-2xl text-red-500'></i>
             </button>
         </div>
@@ -418,7 +418,7 @@
             <!-- Botão GPS Principal -->
             <div class="relative w-64 h-64 flex items-center justify-center mb-8 flex-shrink-0">
                 <div id="gps-pulse" class="absolute inset-0 rounded-full bg-red-600 hidden pulse-red"></div>
-                <button id="btn-toggle-gps" onclick="toggleGPS()" class="w-56 h-56 bg-slate-800 border-[6px] border-slate-700 rounded-full flex flex-col items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.5)] relative z-10 active:scale-95 disabled:opacity-30 transition-all" disabled>
+                <button id="btn-toggle-gps" onclick="window.toggleGPS()" class="w-56 h-56 bg-slate-800 border-[6px] border-slate-700 rounded-full flex flex-col items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.5)] relative z-10 active:scale-95 disabled:opacity-30 transition-all" disabled>
                     <i id="gps-icon" class='bx bx-navigation text-7xl text-slate-500 mb-2'></i>
                     <span id="gps-text" class="font-black text-slate-500 uppercase text-[10px] text-center px-6 leading-tight tracking-[0.1em]">ACORDAR<br>SATÉLITE</span>
                 </button>
@@ -430,7 +430,7 @@
             <div id="motorista-cargas-container" class="w-full max-w-sm hidden space-y-6">
                 <div id="motorista-lista-cargas"></div>
 
-                <button onclick="abrirModalOcorrencia()" class="w-full bg-slate-800 border border-slate-700 text-white font-black py-6 rounded-3xl shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all">
+                <button onclick="window.abrirModalOcorrencia()" class="w-full bg-slate-800 border border-slate-700 text-white font-black py-6 rounded-3xl shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all">
                     <div class="w-12 h-12 bg-amber-500 text-slate-900 rounded-xl flex items-center justify-center text-3xl"><i class='bx bx-receipt'></i></div>
                     <div class="text-left">
                         <span class="block text-xs uppercase tracking-widest font-black">Reportar Ocorrência</span>
@@ -448,7 +448,7 @@
         <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border-t-8 border-t-slate-900">
             <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
                 <h3 class="font-black text-slate-800 uppercase text-sm tracking-tight flex items-center gap-2"><i class='bx bx-wrench text-xl'></i> Ordem de Serviço</h3>
-                <button onclick="fecharModal('modal-manutencao')" class="text-slate-400 hover:text-red-500 transition"><i class='bx bx-x text-3xl'></i></button>
+                <button onclick="window.fecharModal('modal-manutencao')" class="text-slate-400 hover:text-red-500 transition"><i class='bx bx-x text-3xl'></i></button>
             </div>
             <form id="form-manutencao" class="p-8 space-y-5">
                 <select id="man-veiculo" required class="w-full p-4 border-2 border-slate-100 rounded-2xl bg-white text-sm font-black outline-none focus:border-slate-500 transition"></select>
@@ -470,7 +470,7 @@
         <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border-t-8 border-t-red-600">
             <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
                 <h3 class="font-black text-slate-800 uppercase text-sm tracking-tight flex items-center gap-2"><i class='bx bxs-user-badge text-red-600 text-xl'></i> Admitir Colaborador</h3>
-                <button onclick="fecharModal('modal-equipe')" class="text-slate-400 hover:text-red-500 transition"><i class='bx bx-x text-3xl'></i></button>
+                <button onclick="window.fecharModal('modal-equipe')" class="text-slate-400 hover:text-red-500 transition"><i class='bx bx-x text-3xl'></i></button>
             </div>
             <form id="form-equipe" class="p-8 space-y-4">
                 <input type="text" id="eq-nome" placeholder="Nome Completo" required class="w-full p-4 border-2 border-slate-100 rounded-2xl text-sm font-bold bg-slate-50 outline-none">
@@ -494,7 +494,7 @@
         <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border-t-8 border-t-red-600">
             <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
                 <h3 class="font-black text-slate-800 uppercase text-sm tracking-tight flex items-center gap-2"><i class='bx bx-rocket text-red-600 text-xl'></i> Expedição Logística</h3>
-                <button onclick="fecharModal('modal-carga')" class="text-slate-400 hover:text-red-500 transition"><i class='bx bx-x text-3xl'></i></button>
+                <button onclick="window.fecharModal('modal-carga')" class="text-slate-400 hover:text-red-500 transition"><i class='bx bx-x text-3xl'></i></button>
             </div>
             <form id="form-carga" class="p-8 space-y-5">
                 <div class="grid grid-cols-2 gap-4">
@@ -514,7 +514,7 @@
         <div class="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden">
             <div class="bg-slate-900 p-6 text-white flex justify-between items-center border-b-4 border-amber-500">
                 <h3 class="font-black uppercase text-xs tracking-widest flex items-center gap-3"><i class='bx bx-brain text-amber-500 text-2xl'></i> Negociação IA</h3>
-                <button onclick="fecharModal('modal-ia')" class="text-slate-400 hover:text-white transition"><i class='bx bx-x text-3xl'></i></button>
+                <button onclick="window.fecharModal('modal-ia')" class="text-slate-400 hover:text-white transition"><i class='bx bx-x text-3xl'></i></button>
             </div>
             <div class="p-8">
                 <div class="bg-amber-50 p-6 rounded-3xl mb-6 border border-amber-200 flex items-start gap-4 shadow-inner">
@@ -525,7 +525,7 @@
                         <input type="text" id="ia-store-phone" placeholder="WhatsApp" class="w-full p-3 border border-amber-200 rounded-xl text-xs font-black bg-white focus:ring-1 focus:ring-amber-500 outline-none transition shadow-sm">
                     </div>
                 </div>
-                <select id="ia-contexto" class="w-full p-4 mb-5 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase bg-slate-50 tracking-widest outline-none transition focus:border-amber-400" onchange="gerarTextoIA()">
+                <select id="ia-contexto" class="w-full p-4 mb-5 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase bg-slate-50 tracking-widest outline-none transition focus:border-amber-400" onchange="window.gerarTextoIA()">
                     <option value="frete_gratis">LOGÍSTICA: Aproveitar Rota (Isenção Total Frete)</option>
                     <option value="manutencao">PÓS-VENDA: Revisão Preventiva na Região</option>
                 </select>
@@ -537,8 +537,8 @@
                     </div>
                 </div>
                 <div class="mt-8 flex gap-3">
-                    <button onclick="gerarTextoIA()" class="flex-1 border-2 border-slate-100 hover:border-slate-200 py-4 text-[10px] font-black uppercase rounded-2xl transition active:scale-95">Recriar</button>
-                    <button onclick="enviarWpp()" class="flex-[2] bg-green-600 hover:bg-green-700 text-white py-4 text-[10px] font-black uppercase rounded-2xl shadow-xl transition active:scale-95 flex justify-center items-center gap-2 border border-green-400">
+                    <button onclick="window.gerarTextoIA()" class="flex-1 border-2 border-slate-100 hover:border-slate-200 py-4 text-[10px] font-black uppercase rounded-2xl transition active:scale-95">Recriar</button>
+                    <button onclick="window.enviarWpp()" class="flex-[2] bg-green-600 hover:bg-green-700 text-white py-4 text-[10px] font-black uppercase rounded-2xl shadow-xl transition active:scale-95 flex justify-center items-center gap-2 border border-green-400">
                         <i class='bx bxl-whatsapp text-2xl'></i> Disparar WhatsApp
                     </button>
                 </div>
@@ -565,14 +565,16 @@
                 <input type="text" id="cli-end" placeholder="Pesquise o Endereço Físico Completo..." required class="w-full p-4 border-2 border-slate-200 rounded-2xl text-sm font-bold bg-slate-50 focus:border-blue-500 focus:bg-white outline-none transition">
                 
                 <button type="submit" class="w-full bg-red-600 text-white p-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all mt-2">Gravar Cliente e Coordenadas</button>
-                <button type="button" onclick="fecharModal('modal-cliente')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-3 hover:text-slate-600 transition">Cancelar Operação</button>
+                <button type="button" onclick="window.fecharModal('modal-cliente')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-3 hover:text-slate-600 transition">Cancelar Operação</button>
             </form>
         </div>
     </div>
     
-    <div id="modal-frota" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[200] p-4"><div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl"><h3 class="font-black uppercase mb-6 text-sm flex items-center gap-2"><i class='bx bxs-truck text-red-600'></i> Novo Veículo</h3><form id="form-frota" class="space-y-4"><input type="text" id="fr-placa" placeholder="Placa Mercosul" required class="w-full p-4 border rounded-2xl uppercase font-black tracking-widest"><input type="text" id="fr-modelo" placeholder="Ex: Iveco Daily" required class="w-full p-4 border rounded-2xl text-sm font-bold"><select id="fr-status" class="w-full p-4 border rounded-2xl text-xs font-black uppercase bg-white"><option value="Disponível">Disponível</option><option value="Em Oficina">Em Manutenção</option></select><button type="submit" class="w-full bg-red-600 text-white p-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all">Registar Viatura</button><button type="button" onclick="fecharModal('modal-frota')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-3">Sair</button></form></div></div>
+    <!-- Modal Frota -->
+    <div id="modal-frota" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[200] p-4"><div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl"><h3 class="font-black uppercase mb-6 text-sm flex items-center gap-2"><i class='bx bxs-truck text-red-600'></i> Novo Veículo</h3><form id="form-frota" class="space-y-4"><input type="text" id="fr-placa" placeholder="Placa Mercosul" required class="w-full p-4 border rounded-2xl uppercase font-black tracking-widest"><input type="text" id="fr-modelo" placeholder="Ex: Iveco Daily" required class="w-full p-4 border rounded-2xl text-sm font-bold"><select id="fr-status" class="w-full p-4 border rounded-2xl text-xs font-black uppercase bg-white"><option value="Disponível">Disponível</option><option value="Em Oficina">Em Manutenção</option></select><button type="submit" class="w-full bg-red-600 text-white p-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all">Registar Viatura</button><button type="button" onclick="window.fecharModal('modal-frota')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-3">Sair</button></form></div></div>
     
-    <div id="modal-ocorrencia" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[200] p-4"><div class="bg-slate-800 rounded-[2.5rem] w-full max-w-sm p-8 text-white shadow-2xl border border-slate-700"><h3 class="font-black uppercase mb-6 text-sm tracking-widest flex items-center gap-3"><i class='bx bx-receipt text-amber-500 text-2xl'></i> Relatar Evento</h3><form id="form-ocorrencia" class="space-y-5"><select id="oco-tipo" class="w-full p-3.5 rounded-xl bg-slate-900 text-white border border-slate-600 outline-none focus:border-amber-500 font-bold text-sm"><option value="Pedágio">Portagem / Pedágio</option><option value="Combustível">Diesel / Arla</option><option value="Oficina">Reparo de Emergência</option><option value="Almoço">Refeição / Pernoite</option></select><input type="number" step="0.01" id="oco-valor" placeholder="Custo R$" class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-500 font-black text-2xl text-center"><input type="file" id="oco-foto" accept="image/*" capture="environment" class="w-full text-[10px] text-slate-400 border border-slate-700 p-2 rounded-xl"><textarea id="oco-desc" placeholder="Detalhes do ocorrido..." required class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-sm resize-none"></textarea><button type="submit" id="btn-salvar-ocorrencia" class="w-full bg-amber-600 text-slate-900 p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Concluir Envio</button><button type="button" onclick="fecharModal('modal-ocorrencia')" class="w-full text-slate-500 text-[10px] font-black uppercase mt-3">Descartar</button></form></div></div>
+    <!-- Modal Lançamento de Ocorrência da Estrada (Motorista Mobile) -->
+    <div id="modal-ocorrencia" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[200] p-4"><div class="bg-slate-800 rounded-[2.5rem] w-full max-w-sm p-8 text-white shadow-2xl border border-slate-700"><h3 class="font-black uppercase mb-6 text-sm tracking-widest flex items-center gap-3"><i class='bx bx-receipt text-amber-500 text-2xl'></i> Relatar Evento</h3><form id="form-ocorrencia" class="space-y-5"><select id="oco-tipo" class="w-full p-3.5 rounded-xl bg-slate-900 text-white border border-slate-600 outline-none focus:border-amber-500 font-bold text-sm"><option value="Pedágio">Portagem / Pedágio</option><option value="Combustível">Diesel / Arla</option><option value="Oficina">Reparo de Emergência</option><option value="Almoço">Refeição / Pernoite</option></select><input type="number" step="0.01" id="oco-valor" placeholder="Custo R$" class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-500 font-black text-2xl text-center"><input type="file" id="oco-foto" accept="image/*" capture="environment" class="w-full text-[10px] text-slate-400 border border-slate-700 p-2 rounded-xl"><textarea id="oco-desc" placeholder="Detalhes do ocorrido..." required class="w-full p-3.5 rounded-xl bg-slate-900 text-white border border-slate-600 resize-none outline-none focus:border-amber-500 text-sm transition"></textarea><button type="submit" id="btn-salvar-ocorrencia" class="w-full bg-amber-600 text-slate-900 p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Concluir Envio</button><button type="button" onclick="window.fecharModal('modal-ocorrencia')" class="w-full text-slate-500 text-[10px] font-black uppercase mt-3">Descartar</button></form></div></div>
 
     <!-- ================= 6. JAVASCRIPT INTEGRAL (ENGENHARIA LOGÍSTICA E GEOCODIFICAÇÃO) ================= -->
     <script>
@@ -586,6 +588,7 @@
             messagingSenderId: "274943213765",
             appId: "1:274943213765:web:981162ad21a58c220970ac"
         };
+        
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
@@ -608,10 +611,9 @@
         // Variavel para capturar a Geocodificação Exata do Cliente no momento do cadastro
         let clienteGooglePlaceLocation = null;
 
-        // --- 2. NAVEGAÇÃO E AUTH ---
-        function nav(target) {
-            const btns = document.querySelectorAll('.nav-btn');
-            btns.forEach(btn => {
+        // --- 2. NAVEGAÇÃO E MODAIS (ESCOPO GLOBAL GARANTIDO) ---
+        window.nav = function(target) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('nav-btn-active', 'nav-btn-ia-active');
                 if(btn.dataset.target === target) {
                     if(target === 'prospeccao') btn.classList.add('nav-btn-ia-active');
@@ -630,43 +632,52 @@
                 }
             }
 
-            if(target === 'rastreio') checkMap('rastreio');
-            if(target === 'prospeccao') { checkMap('rota'); popularSelectVeiculosRadar(); }
-        }
-
-        const loginForm = document.getElementById('login-form');
-        if(loginForm) loginForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const em = document.getElementById('login-email').value;
-            const pa = document.getElementById('login-pass').value;
-            const msg = document.getElementById('login-error');
-            msg.innerText = "Conectando ao Satélite...";
-            try { await auth.signInWithEmailAndPassword(em, pa); } 
-            catch (err) { msg.innerText = "Acesso Negado: Chave de acesso inválida."; }
+            if(target === 'rastreio') window.checkMap('rastreio');
+            if(target === 'prospeccao') { window.checkMap('rota'); window.popularSelectVeiculosRadar(); }
         };
+
+        window.abrirModal = function(id) { const m = document.getElementById(id); if(m) { m.classList.remove('hidden'); m.classList.add('flex'); } };
+        window.fecharModal = function(id) { const m = document.getElementById(id); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } };
+
+        // --- 3. AUTENTICAÇÃO ---
+        const loginForm = document.getElementById('login-form');
+        if(loginForm) {
+            loginForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const em = document.getElementById('login-email').value;
+                const pa = document.getElementById('login-pass').value;
+                const msg = document.getElementById('login-error');
+                msg.innerText = "Conectando ao Satélite...";
+                try { await auth.signInWithEmailAndPassword(em, pa); } 
+                catch (err) { msg.innerText = "Acesso Negado: Chave de acesso inválida."; }
+            };
+        }
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('login-view').classList.add('hidden-view');
+                const viewL = document.getElementById('login-view');
+                if(viewL) viewL.classList.add('hidden-view');
                 carregarConfiguracoesAED();
-                const snap = await db.ref(`users_roles/${user.uid}`).once('value');
-                const role = snap.exists() ? snap.val().role : 'motorista';
-                if(role === 'gestor' || user.email.includes('admin') || user.email.includes('aed@')) {
-                    document.getElementById('admin-view').classList.remove('hidden-view');
-                    const ud = document.getElementById('user-display'); if(ud) ud.innerText = user.email.split('@')[0].toUpperCase();
-                    carregarMecanismoAdmin(); nav('dashboard');
-                } else {
-                    document.getElementById('motorista-view').classList.remove('hidden-view');
-                    const md = document.getElementById('mot-nome-display'); if(md) md.innerText = user.email.split('@')[0].toUpperCase();
-                    iniciarAppMotorista();
-                }
+                
+                db.ref(`users_roles/${user.uid}`).once('value').then(snap => {
+                    const role = snap.exists() ? snap.val().role : 'motorista';
+                    if(role === 'gestor' || user.email.includes('admin') || user.email.includes('aed@')) {
+                        const vA = document.getElementById('admin-view'); if(vA) vA.classList.remove('hidden-view');
+                        const ud = document.getElementById('user-display'); if(ud) ud.innerText = user.email.split('@')[0].toUpperCase();
+                        carregarMecanismoAdmin(); window.nav('dashboard');
+                    } else {
+                        const vM = document.getElementById('motorista-view'); if(vM) vM.classList.remove('hidden-view');
+                        const md = document.getElementById('mot-nome-display'); if(md) md.innerText = user.email.split('@')[0].toUpperCase();
+                        window.iniciarArquiteturaMotorista();
+                    }
+                }).catch(()=>{});
             }
         });
 
-        function fazerLogout() { auth.signOut().then(() => window.location.reload()); }
+        window.fazerLogout = function() { auth.signOut().then(() => window.location.reload()); };
 
-        // --- 3. CONFIG E MAPAS GOOGLE (COM PROTEÇÃO DE AUTOCOMPLETE) ---
+        // --- 4. CONFIG E MAPAS GOOGLE ---
         function carregarConfiguracoesAED() {
             db.ref(`${DB_ROOT}/config`).on('value', snap => {
                 if(snap.exists()){
@@ -681,20 +692,19 @@
                     if(document.getElementById('upload-preset')) document.getElementById('upload-preset').value = CLOUDINARY_UPLOAD_PRESET;
                     if(document.getElementById('cloud-bytes-display')) document.getElementById('cloud-bytes-display').innerText = (CLOUDINARY_BYTES_USED / (1024 * 1024)).toFixed(2) + ' MB';
                     
-                    if(GOOGLE_MAPS_KEY && !mapsLoaded) carregarGoogleMapsRuntime();
+                    if(GOOGLE_MAPS_KEY && !mapsLoaded) window.carregarGoogleMapsRuntime();
                 }
             });
         }
 
-        function carregarGoogleMapsRuntime() {
+        window.carregarGoogleMapsRuntime = function() {
             if(mapsLoading) return; mapsLoading = true;
             window.initMap = () => { 
                 mapsLoaded = true; 
                 mapsLoading = false; 
-                checkMap('rastreio'); 
-                checkMap('rota'); 
+                window.checkMap('rastreio'); 
+                window.checkMap('rota'); 
                 
-                // INICIA O AUTOCOMPLETE NO REGISTO DE CLIENTE
                 const inputEnd = document.getElementById('cli-end');
                 if(inputEnd && google.maps.places) {
                     const autocomplete = new google.maps.places.Autocomplete(inputEnd);
@@ -713,9 +723,9 @@
             const s = document.createElement('script');
             s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places,geometry&callback=initMap`;
             s.async = true; s.defer = true; document.head.appendChild(s);
-        }
+        };
 
-        function checkMap(type) {
+        window.checkMap = function(type) {
             if(!mapsLoaded) return;
             if(type === 'rastreio' && !document.getElementById('view-rastreio').classList.contains('hidden-view')) {
                 const overlay = document.getElementById('map-rastreio-overlay'); if(overlay) overlay.classList.add('hidden');
@@ -729,25 +739,24 @@
                     directionsRenderer = new google.maps.DirectionsRenderer({ map: mapRotaObj, polylineOptions: { strokeColor: "#0f172a", strokeWeight: 6, strokeOpacity: 0.8 } });
                 }
             }
-        }
+        };
 
-        // --- 4. RADAR LOGÍSTICO (GEOMETRIA ABSOLUTA) ---
-        function popularSelectVeiculosRadar() {
+        // --- 5. RADAR LOGÍSTICO IA ---
+        window.popularSelectVeiculosRadar = function() {
             db.ref(`${DB_ROOT}/frota`).once('value', snap => {
                 let h = '<option value="">-- Caminhões Operando em Rota --</option>';
                 if(snap.exists()) snap.forEach(f => { if(f.val().status === 'Em Rota') h += `<option value="${f.val().placa}">Viatura: ${f.val().placa}</option>`; });
                 const sel = document.getElementById('radar-veiculo'); if(sel) sel.innerHTML = h;
             });
-        }
+        };
 
-        async function preencherRotaVeiculo() {
+        window.preencherRotaVeiculo = async function() {
             const p = document.getElementById('radar-veiculo').value; if(!p) return;
             document.getElementById('origem-rota').value = "Puxando Satélite...";
             document.getElementById('destino-rota').value = "Calculando Waypoints...";
             
             const gps = await db.ref(`${DB_ROOT}/gps_tracking/${p}`).once('value');
             if(gps.exists() && gps.val().status === 'online') {
-                // Guarda a coordenada direta para evitar falha no Google Text Search
                 document.getElementById('origem-rota').value = `${gps.val().lat}, ${gps.val().lng}`;
             } else {
                 document.getElementById('origem-rota').value = "São José do Rio Preto, SP";
@@ -761,18 +770,17 @@
             } else {
                 document.getElementById('destino-rota').value = "Nenhum Romaneio ativo.";
             }
-        }
+        };
 
-        async function analisarRotaClientesBase() {
+        window.analisarRotaClientesBase = async function() {
             const org = document.getElementById('origem-rota').value;
             const dst = document.getElementById('destino-rota').value;
             const btn = document.getElementById('btn-analisar-rota');
             if(!directionsService || !org || !dst) return alert("Erro: Mapas indisponíveis.");
 
-            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Traçando Rota Real do Camião...";
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Traçando Rota Real...";
             routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
 
-            // A. Formatação de Coordenadas de Origem Segura
             const formatarCoord = (str) => {
                 if(typeof str === 'string' && str.includes(',')) {
                     const partes = str.split(','); const lat = parseFloat(partes[0]); const lng = parseFloat(partes[1]);
@@ -782,17 +790,12 @@
             };
 
             const originFormatado = formatarCoord(org);
-
-            // B. Preparação de Waypoints (NFes)
             let wpts = [];
             const wData = document.getElementById('destino-rota').dataset.wpts;
-            if(wData) {
-                try { JSON.parse(wData).forEach(w => wpts.push({location: formatarCoord(w), stopover: true})); } catch(e){}
-            }
+            if(wData) { try { JSON.parse(wData).forEach(w => wpts.push({location: formatarCoord(w), stopover: true})); } catch(e){} }
 
             const geocoder = new google.maps.Geocoder();
             
-            // C. Geocodificar Destino Final para evitar NOT_FOUND
             geocoder.geocode({ address: dst }, (resDst, statDst) => {
                 let destReq = dst;
                 if (statDst === 'OK' && resDst[0]) { destReq = resDst[0].geometry.location; }
@@ -801,14 +804,11 @@
 
                 directionsService.route(requestCompleto, async (res, status) => {
                     if (status === 'OK') {
-                        processarCruzamentoRadial(res, btn, originFormatado);
+                        window.processarCruzamentoRadial(res, btn, originFormatado);
                     } else if (status === 'NOT_FOUND' && wpts.length > 0) {
-                        // FALLBACK: O motorista tem uma NFe no meio do caminho que o Google não reconhece. Ignora os waypoints e traça direto.
-                        console.warn("Waypoint falhou. Ativando Rota Direta Emergencial...");
                         directionsService.route({ origin: originFormatado, destination: destReq, travelMode: 'DRIVING' }, (resFall, statFall) => {
                             if (statFall === 'OK') {
-                                alert("Nota da Engenharia: Um destino intermediário possui endereço inválido para o Google. A Rota foi traçada de forma direta até a última NFe para não interromper a IA.");
-                                processarCruzamentoRadial(resFall, btn, originFormatado);
+                                window.processarCruzamentoRadial(resFall, btn, originFormatado);
                             } else {
                                 btn.innerHTML = "<i class='bx bx-map-alt text-xl'></i> Tentar Mapeamento";
                                 alert("ALERTA CRÍTICO: Rota impossível de ser traçada. " + statFall);
@@ -820,23 +820,21 @@
                     }
                 });
             });
-        }
+        };
 
-        async function processarCruzamentoRadial(res, btn, originFormatado) {
+        window.processarCruzamentoRadial = async function(res, btn, originFormatado) {
             directionsRenderer.setDirections(res);
             
             if(!google.maps.geometry || !google.maps.geometry.poly) return alert("Erro: Biblioteca 'geometry' do Google ausente.");
             const routePolyline = new google.maps.Polyline({ path: res.routes[0].overview_path });
 
-            // INSERE O CAMINHÃO NA ORIGEM DA ROTA NO MAPA PARA O DIRETOR VER
             const truckOriginPos = res.routes[0].legs[0].start_location;
             const truckMarker = new google.maps.Marker({
-                position: truckOriginPos, map: mapRotaObj, title: "Posição Inicial do Camião", 
+                position: truckOriginPos, map: mapRotaObj, title: "Posição do Camião", 
                 icon: "https://maps.google.com/mapfiles/ms/icons/truck.png", zIndex: 999
             });
             routeMarkers.push(truckMarker);
 
-            // BUSCA A BASE DE CLIENTES
             const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
             const meusClientes = [];
             if(clSnap.exists()) clSnap.forEach(c => meusClientes.push({...c.val(), id: c.key}));
@@ -851,18 +849,15 @@
             const clientesNoCaminho = [];
             const geocoder = new google.maps.Geocoder();
 
-            // Mapeamento Paralelo Assíncrono para velocidade máxima
             const promessas = meusClientes.map(cli => {
                 return new Promise((resolve) => {
-                    // SE O CLIENTE FOI CADASTRADO COM O NOVO SISTEMA, ELE JÁ TEM LAT/LNG (CÁLCULO IMEDIATO)
                     if (cli.lat && cli.lng) {
                         const localCliente = new google.maps.LatLng(cli.lat, cli.lng);
-                        if (google.maps.geometry.poly.isLocationOnEdge(localCliente, routePolyline, 0.2)) { // ~20km Tolerância
+                        if (google.maps.geometry.poly.isLocationOnEdge(localCliente, routePolyline, 0.2)) {
                             clientesNoCaminho.push({...cli, location: localCliente});
                         }
                         resolve();
                     } else {
-                        // SE É UM CLIENTE ANTIGO SEM LAT/LNG, O SISTEMA TENTA ACHÁ-LO "ON THE FLY"
                         geocoder.geocode({ address: `${cli.end || ''}, ${cli.cid}`.trim() }, (results, geoStatus) => {
                             if (geoStatus === 'OK' && results[0]) {
                                 const localCliente = results[0].geometry.location;
@@ -880,10 +875,10 @@
 
             btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Varredura Concluída";
             setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Iniciar Nova Varredura"; }, 3000);
-            renderizarRadarIntegral(clientesNoCaminho);
-        }
+            window.renderizarRadarIntegral(clientesNoCaminho);
+        };
 
-        function renderizarRadarIntegral(clientes) {
+        window.renderizarRadarIntegral = function(clientes) {
             const list = document.getElementById('lista-prospeccao');
             const badge = document.getElementById('badge-places');
             if(badge) { badge.innerText = `${clientes.length} DETECTADOS`; badge.classList.remove('hidden'); }
@@ -904,21 +899,21 @@
                         <span class="text-[8px] bg-amber-100 text-amber-600 px-1 rounded font-black">CLIENTE BASE</span>
                     </div>
                     <p class="text-[10px] text-slate-500 font-bold mb-4 leading-tight"><i class='bx bx-map text-red-500'></i> ${c.end || c.cid}</p>
-                    <button onclick="abrirPitchIA('${escN}','${escA}','${telefoneReal}')" class="w-full bg-slate-900 text-amber-500 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center"><i class='bx bx-brain'></i> Formular Venda IA</button>
+                    <button onclick="window.abrirPitchIA('${escN}','${escA}','${telefoneReal}')" class="w-full bg-slate-900 text-amber-500 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center"><i class='bx bx-brain'></i> Formular Venda IA</button>
                 </div>`;
             });
             if(list) list.innerHTML = h || "<p class='text-center p-12 opacity-30 font-black uppercase text-xs'>Nenhum cliente base no trajeto da estrada.</p>";
-        }
+        };
 
-        function abrirPitchIA(n, l, t) {
+        window.abrirPitchIA = function(n, l, t) {
             activePlaceDetails = { name: n, address: l, phone: t.replace(/\D/g,'') };
             document.getElementById('ia-store-name').innerText = n;
             document.getElementById('ia-store-address').innerText = l;
             document.getElementById('ia-store-phone').value = activePlaceDetails.phone.startsWith('55') ? activePlaceDetails.phone : '55'+activePlaceDetails.phone;
-            abrirModal('modal-ia'); gerarTextoIA();
-        }
+            window.abrirModal('modal-ia'); window.gerarTextoIA();
+        };
 
-        async function gerarTextoIA() {
+        window.gerarTextoIA = async function() {
             const txt = document.getElementById('ia-texto'); const load = document.getElementById('ia-loading');
             if(load) load.classList.remove('hidden'); if(txt) txt.value = "";
             const ctx = document.getElementById('ia-contexto').options[document.getElementById('ia-contexto').selectedIndex].text;
@@ -927,82 +922,79 @@
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ contents: [{parts:[{text: prompt}]}] }) });
                 const d = await res.json(); if(txt) txt.value = d.candidates[0].content.parts[0].text;
             } catch(e) { if(txt) txt.value = "Conexão IA perdida."; } finally { if(load) load.classList.add('hidden'); }
-        }
+        };
 
-        function enviarWpp() { window.open(`https://wa.me/${document.getElementById('ia-store-phone').value}?text=${encodeURIComponent(document.getElementById('ia-texto').value)}`, '_blank'); }
+        window.enviarWpp = function() { 
+            const num = document.getElementById('ia-store-phone').value; 
+            const txt = document.getElementById('ia-texto').value; 
+            if(num && txt) { window.open(`https://wa.me/${num}?text=${encodeURIComponent(txt)}`, '_blank'); } 
+        };
 
-        // --- 5. GESTÃO ADMINISTRATIVA (TODOS OS MÓDULOS) ---
+        // --- 6. GESTÃO ADMINISTRATIVA ---
         function carregarMecanismoAdmin() {
-            // Clientes
             db.ref(`${DB_ROOT}/clientes`).on('value', snap => {
                 let h = ''; let cCount = 0;
-                snap.forEach(c => { cCount++; const d = c.val(); h += `<tr class="hover:bg-slate-50 transition border-b"><td class="p-4 font-black text-slate-800 text-xs uppercase">${d.nome}</td><td class="p-4 text-xs font-bold text-slate-600">${d.tel}</td><td class="p-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">${d.cid}</td><td class="p-4 text-center"><button onclick="remover('${c.key}','clientes')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`; });
+                snap.forEach(c => { cCount++; const d = c.val(); h += `<tr class="hover:bg-slate-50 transition border-b"><td class="p-4 font-black text-slate-800 text-xs uppercase">${d.nome}</td><td class="p-4 text-xs font-bold text-slate-600">${d.tel}</td><td class="p-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">${d.cid}</td><td class="p-4 text-center"><button onclick="window.excluir('${c.key}','clientes')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`; });
                 const lc = document.getElementById('lista-clientes'); if(lc) lc.innerHTML = h;
                 const dc = document.getElementById('dash-clientes'); if(dc) dc.innerText = cCount;
             });
 
-            // Romaneios
             db.ref(`${DB_ROOT}/cargas`).on('value', snap => {
                 let h = ''; let rCount = 0;
                 snap.forEach(c => {
                     const d = c.val(); if(d.status === 'Em Rota') rCount++;
                     const stCls = d.status === 'Entregue' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
-                    h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><span class="px-2 py-1 rounded-lg font-black text-[9px] uppercase ${stCls}">${d.status}</span></td><td class="p-4 font-black tracking-widest text-slate-800 uppercase">${d.veiculo}<br><span class="text-[8px] text-red-500 font-bold">${d.motorista_nome || ''}</span></td><td class="p-4 font-bold text-slate-700 uppercase"><i class='bx bxs-map text-red-500'></i> ${d.destino}</td><td class="p-4 text-[9px] text-slate-400 font-medium">NFe: ${d.nfe}<br>${d.desc}</td><td class="p-4 text-center"><button onclick="remover('${c.key}','cargas')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
+                    h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><span class="px-2 py-1 rounded-lg font-black text-[9px] uppercase ${stCls}">${d.status}</span></td><td class="p-4 font-black tracking-widest text-slate-800 uppercase">${d.veiculo}<br><span class="text-[8px] text-red-500 font-bold">${d.motorista_nome || ''}</span></td><td class="p-4 font-bold text-slate-700 uppercase"><i class='bx bxs-map text-red-500'></i> ${d.destino}</td><td class="p-4 text-[9px] text-slate-400 font-medium">NFe: ${d.nfe}<br>${d.desc}</td><td class="p-4 text-center"><button onclick="window.excluir('${c.key}','cargas')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
                 });
                 const lr = document.getElementById('lista-cargas'); if(lr) lr.innerHTML = h;
                 const dr = document.getElementById('dash-cargas'); if(dr) dr.innerText = rCount;
             });
 
-            // Frota
             db.ref(`${DB_ROOT}/frota`).on('value', snap => {
                 let count = 0; let h = '';
                 snap.forEach(f => {
                     count++; const d = f.val(); const st = d.status || 'Disponível';
                     const stCls = st === 'Disponível' ? 'bg-green-100 text-green-600' : (st === 'Em Rota' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600');
-                    h += `<div class="bg-white p-5 rounded-2xl border flex flex-col hover:shadow-lg transition relative overflow-hidden"><div class="flex justify-between items-start mb-4"><div><h4 class="font-black text-2xl tracking-widest text-slate-800">${d.placa}</h4><p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">${d.modelo}</p></div><span class="text-[8px] font-black uppercase px-2 py-1 rounded-lg ${stCls}">${st}</span></div><div class="flex gap-2 mt-auto border-t pt-4"><button onclick="abrirModalManutencao('${d.placa}')" class="flex-1 bg-slate-900 text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-widest active:scale-95">Oficina</button><button onclick="remover('${f.key}','frota')" class="text-red-300 hover:text-red-600 p-2"><i class='bx bx-trash text-lg'></i></button></div></div>`;
+                    h += `<div class="bg-white p-5 rounded-2xl border flex flex-col hover:shadow-lg transition relative overflow-hidden"><div class="flex justify-between items-start mb-4"><div><h4 class="font-black text-2xl tracking-widest text-slate-800">${d.placa}</h4><p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">${d.modelo}</p></div><span class="text-[8px] font-black uppercase px-2 py-1 rounded-lg ${stCls}">${st}</span></div><div class="flex gap-2 mt-auto border-t pt-4"><button onclick="window.abrirModalManutencao('${d.placa}')" class="flex-1 bg-slate-900 text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-widest active:scale-95">Oficina</button><button onclick="window.excluir('${f.key}','frota')" class="text-red-300 hover:text-red-600 p-2"><i class='bx bx-trash text-lg'></i></button></div></div>`;
                 });
                 const lf = document.getElementById('lista-frota'); if(lf) lf.innerHTML = h;
                 const df = document.getElementById('dash-frota'); if(df) df.innerText = count;
             });
 
-            // Equipe
             db.ref(`${DB_ROOT}/equipe`).on('value', snap => {
                 let h = ''; snap.forEach(e => {
                     const d = e.val();
-                    h += `<div class="bg-white p-5 rounded-2xl border flex items-center gap-4 hover:border-red-300 transition relative"><div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-2xl shadow-inner"><i class='bx bxs-user-detail'></i></div><div><h4 class="font-black text-slate-800 text-sm uppercase leading-none mb-1">${d.nome}</h4><p class="text-[9px] text-red-500 font-black uppercase tracking-widest">${d.cargo}</p><p class="text-[10px] text-slate-400 mt-2 font-medium">${d.email}</p></div><button onclick="removerUser('${e.key}')" class="absolute top-3 right-3 text-slate-200 hover:text-red-600 transition"><i class='bx bx-user-x text-xl'></i></button></div>`;
+                    h += `<div class="bg-white p-5 rounded-2xl border flex items-center gap-4 hover:border-red-300 transition relative"><div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-2xl shadow-inner"><i class='bx bxs-user-detail'></i></div><div><h4 class="font-black text-slate-800 text-sm uppercase leading-none mb-1">${d.nome}</h4><p class="text-[9px] text-red-500 font-black uppercase tracking-widest">${d.cargo}</p><p class="text-[10px] text-slate-400 mt-2 font-medium">${d.email}</p></div><button onclick="window.excluirUser('${e.key}')" class="absolute top-3 right-3 text-slate-200 hover:text-red-600 transition"><i class='bx bx-user-x text-xl'></i></button></div>`;
                 });
                 const le = document.getElementById('lista-equipe'); if(le) le.innerHTML = h;
             });
 
-            // Oficina
             db.ref(`${DB_ROOT}/manutencao`).on('value', snap => {
                 let h = ''; snap.forEach(m => {
                     const d = m.val();
-                    h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${new Date(d.data).toLocaleDateString('pt-BR')}</p><p class="font-bold text-slate-800">${d.tipo}</p></td><td class="p-4 font-black text-slate-800 tracking-widest">${d.veiculo}</td><td class="p-4 text-slate-500 italic text-[11px]">"${d.desc}"</td><td class="p-4 text-right font-black text-red-600">R$ ${parseFloat(d.valor).toFixed(2)}</td><td class="p-4 text-center"><button onclick="remover('${m.key}','manutencao')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
+                    h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${new Date(d.data).toLocaleDateString('pt-BR')}</p><p class="font-bold text-slate-800">${d.tipo}</p></td><td class="p-4 font-black text-slate-800 tracking-widest">${d.veiculo}</td><td class="p-4 text-slate-500 italic text-[11px]">"${d.desc}"</td><td class="p-4 text-right font-black text-red-600">R$ ${parseFloat(d.valor).toFixed(2)}</td><td class="p-4 text-center"><button onclick="window.excluir('${m.key}','manutencao')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
                 });
                 const lo = document.getElementById('lista-oficina'); if(lo) lo.innerHTML = h;
             });
 
-            // Ocorrências
             db.ref(`${DB_ROOT}/ocorrencias`).on('value', snap => {
                 let h = ''; let oCount = 0;
                 snap.forEach(o => {
                     oCount++; const d = o.val();
                     const lnk = d.imgUrl ? `<a href="${d.imgUrl}" target="_blank" class="block w-full text-center bg-slate-900 text-white py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] mt-4 shadow-lg active:scale-95 transition">Ver Recibo Digital</a>` : `<p class="text-[8px] text-slate-300 text-center mt-4 border-t border-dashed pt-3">Sem comprovante anexo.</p>`;
-                    h += `<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative"><div class="flex justify-between mb-4 border-b pb-3"><div><p class="text-[8px] text-slate-400 font-black uppercase">${new Date(d.data).toLocaleString('pt-BR')}</p><p class="text-[10px] font-black text-slate-800 uppercase tracking-widest">${d.tipo}</p></div><p class="text-2xl font-black text-red-600">R$ ${parseFloat(d.valor||0).toFixed(2)}</p></div><p class="text-xs font-black uppercase text-slate-600 mb-2 tracking-widest"><i class='bx bxs-truck'></i> ${d.veiculo}</p><p class="text-xs italic text-slate-500 font-medium leading-relaxed">"${d.desc}"</p>${lnk}<button onclick="remover('${o.key}','ocorrencias')" class="absolute top-2 right-2 text-slate-100 hover:text-red-500 transition"><i class='bx bx-x text-xl'></i></button></div>`;
+                    h += `<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative"><div class="flex justify-between mb-4 border-b pb-3"><div><p class="text-[8px] text-slate-400 font-black uppercase">${new Date(d.data).toLocaleString('pt-BR')}</p><p class="text-[10px] font-black text-slate-800 uppercase tracking-widest">${d.tipo}</p></div><p class="text-2xl font-black text-red-600">R$ ${parseFloat(d.valor||0).toFixed(2)}</p></div><p class="text-xs font-black uppercase text-slate-600 mb-2 tracking-widest"><i class='bx bxs-truck'></i> ${d.veiculo}</p><p class="text-xs italic text-slate-500 font-medium leading-relaxed">"${d.desc}"</p>${lnk}<button onclick="window.excluir('${o.key}','ocorrencias')" class="absolute top-2 right-2 text-slate-100 hover:text-red-500 transition"><i class='bx bx-x text-xl'></i></button></div>`;
                 });
                 const loc = document.getElementById('lista-ocorrencias'); if(loc) loc.innerHTML = h;
                 const doc = document.getElementById('dash-ocorrencias'); if(doc) doc.innerText = oCount;
             });
 
-            // Rastreio Satélite
             db.ref(`${DB_ROOT}/gps_tracking`).on('value', snap => {
                 let at = 0; if(snap.exists() && mapRastreioObj) {
                     snap.forEach(g => {
                         const d = g.val(); const placa = g.key;
                         if(d.status === 'online') {
                             at++;
-                            atualizarMarcadorVeiculo(placa, d.lat, d.lng, d.motorista);
+                            window.atualizarMarcadorVeiculo(placa, d.lat, d.lng, d.motorista);
                         } else { if(markersFrota[placa]) { markersFrota[placa].setMap(null); delete markersFrota[placa]; } }
                     });
                 }
@@ -1010,7 +1002,17 @@
             });
         }
 
-        // --- SUBMITS E INTEGRAÇÃO DE COORDENADAS EXATAS ---
+        window.atualizarMarcadorVeiculo = function(placa, lat, lng, motorista) {
+            if(!mapRastreioObj) return;
+            const pos = { lat, lng };
+            if(markersFrota[placa]) { markersFrota[placa].setPosition(pos); } else {
+                markersFrota[placa] = new google.maps.Marker({ position: pos, map: mapRastreioObj, title: `${placa} - Condutor: ${motorista}`, icon: "https://maps.google.com/mapfiles/ms/icons/truck.png" });
+                const info = new google.maps.InfoWindow({ content: `<div style="padding: 10px; font-family: sans-serif;"><h4 style="font-weight: 900; color: #b91c1c; margin-bottom: 5px;">${placa}</h4><p style="font-size: 12px; margin: 0;"><b>Operador:</b> ${motorista}</p><p style="font-size: 10px; color: #22c55e; font-weight: bold; margin-top: 5px;">Satélite Online</p></div>` });
+                markersFrota[placa].addListener("click", () => { info.open(mapRastreioObj, markersFrota[placa]); });
+            }
+        };
+
+        // --- SUBMITS SEGUROS ---
         const frmEquipe = document.getElementById('form-equipe');
         if(frmEquipe) {
             frmEquipe.onsubmit = async (e) => { 
@@ -1019,15 +1021,14 @@
                     const cred = await secondaryAuth.createUserWithEmailAndPassword(document.getElementById('eq-email').value, document.getElementById('eq-senha').value);
                     await db.ref(`users_roles/${cred.user.uid}`).set({ email: document.getElementById('eq-email').value, role: document.getElementById('eq-cargo').value });
                     await db.ref(`${DB_ROOT}/equipe/${cred.user.uid}`).set({ nome: document.getElementById('eq-nome').value, cargo: document.getElementById('eq-cargo').value, email: document.getElementById('eq-email').value, cnh: document.getElementById('eq-cnh').value });
-                    await secondaryAuth.signOut(); fecharModal('modal-equipe'); e.target.reset(); alert("Acesso gerado com sucesso.");
+                    await secondaryAuth.signOut(); window.fecharModal('modal-equipe'); e.target.reset(); alert("Acesso gerado com sucesso.");
                 } catch (err) { alert("Erro de rede ao criar usuário."); } 
                 finally { btn.innerHTML = "Liberar Credenciais"; btn.disabled = false; }
             };
         }
 
-        window.excluirUser = async (uid) => { if(confirm("Deseja bloquear definitivamente o aplicativo deste colaborador?")) { await db.ref(`${DB_ROOT}/equipe/${uid}`).remove(); await db.ref(`users_roles/${uid}`).remove(); } };
+        window.excluirUser = async function(uid) { if(confirm("Deseja bloquear definitivamente o aplicativo deste colaborador?")) { await db.ref(`${DB_ROOT}/equipe/${uid}`).remove(); await db.ref(`users_roles/${uid}`).remove(); } };
         
-        // REGISTO DE CLIENTE - SALVANDO LATITUDE E LONGITUDE NO FIREBASE PARA GARANTIR RADAR 100% EXATO
         const frmCliente = document.getElementById('form-cliente');
         if(frmCliente) { 
             frmCliente.onsubmit = (e) => { 
@@ -1042,14 +1043,12 @@
 
                 let latExata = null; let lngExata = null; let endFinal = end;
 
-                // Se ele usou o Autocomplete, usa a variável global preenchida
                 if (clienteGooglePlaceLocation) {
                     latExata = clienteGooglePlaceLocation.lat;
                     lngExata = clienteGooglePlaceLocation.lng;
                     endFinal = clienteGooglePlaceLocation.formatted_address;
-                    finalizarCadastro(nome, tel, cid, endFinal, latExata, lngExata, btn, oldText);
+                    window.finalizarCadastro(nome, tel, cid, endFinal, latExata, lngExata, btn, oldText);
                 } else if (window.google && google.maps.Geocoder) {
-                    // Se não usou, o sistema força o Google a achar as coordenadas agora
                     const geocoder = new google.maps.Geocoder();
                     geocoder.geocode({ address: end + ", " + cid }, (res, stat) => {
                         if (stat === 'OK' && res[0]) {
@@ -1057,49 +1056,48 @@
                             lngExata = res[0].geometry.location.lng();
                             endFinal = res[0].formatted_address;
                         }
-                        finalizarCadastro(nome, tel, cid, endFinal, latExata, lngExata, btn, oldText);
+                        window.finalizarCadastro(nome, tel, cid, endFinal, latExata, lngExata, btn, oldText);
                     });
                 } else {
-                    finalizarCadastro(nome, tel, cid, end, null, null, btn, oldText);
+                    window.finalizarCadastro(nome, tel, cid, end, null, null, btn, oldText);
                 }
             }; 
         }
 
-        function finalizarCadastro(nome, tel, cid, end, lat, lng, btn, oldText) {
+        window.finalizarCadastro = function(nome, tel, cid, end, lat, lng, btn, oldText) {
             db.ref(`${DB_ROOT}/clientes`).push({ nome, tel, cid, end, lat, lng }).then(() => {
-                fecharModal('modal-cliente'); frmCliente.reset();
+                window.fecharModal('modal-cliente'); if(document.getElementById('form-cliente')) document.getElementById('form-cliente').reset();
                 clienteGooglePlaceLocation = null;
                 btn.innerHTML = oldText; btn.disabled = false;
-                if(lat && lng) alert("Loja registada. As coordenadas de GPS exatas foram ancoradas para rastreio pelo Radar.");
-                else alert("Loja registada sem coordenadas exatas. O radar usará o nome da rua durante o trajeto.");
+                if(lat && lng) alert("Loja registada. As coordenadas exatas foram ancoradas para rastreio.");
             });
-        }
+        };
 
         const frmFrota = document.getElementById('form-frota');
-        if(frmFrota) { frmFrota.onsubmit = (e) => { e.preventDefault(); db.ref(`${DB_ROOT}/frota`).push({ placa: document.getElementById('fr-placa').value.toUpperCase(), modelo: document.getElementById('fr-modelo').value, status: document.getElementById('fr-status').value }); fecharModal('modal-frota'); e.target.reset(); }; }
+        if(frmFrota) { frmFrota.onsubmit = (e) => { e.preventDefault(); db.ref(`${DB_ROOT}/frota`).push({ placa: document.getElementById('fr-placa').value.toUpperCase(), modelo: document.getElementById('fr-modelo').value, status: document.getElementById('fr-status').value }); window.fecharModal('modal-frota'); e.target.reset(); }; }
 
-        window.abrirModalManutencao = (placa_fixa = null) => {
+        window.abrirModalManutencao = function(placa_fixa = null) {
             db.ref(`${DB_ROOT}/frota`).once('value', snap => {
                 let h = '<option value="">Selecione a Viatura</option>'; 
                 if(snap.exists()) { snap.forEach(f => { const selected = (placa_fixa === f.val().placa) ? 'selected' : ''; h += `<option value="${f.val().placa}" ${selected}>${f.val().placa} (${f.val().modelo})</option>`; }); }
                 const mv = document.getElementById('man-veiculo'); if(mv) mv.innerHTML = h;
             });
-            abrirModal('modal-manutencao');
+            window.abrirModal('modal-manutencao');
         };
 
         const frmMan = document.getElementById('form-manutencao');
         if(frmMan) {
             frmMan.onsubmit = (e) => {
                 e.preventDefault(); db.ref(`${DB_ROOT}/manutencao`).push({ veiculo: document.getElementById('man-veiculo').value, tipo: document.getElementById('man-tipo').value, valor: document.getElementById('man-valor').value, desc: document.getElementById('man-desc').value, data: Date.now() });
-                fecharModal('modal-manutencao'); e.target.reset(); nav('oficina');
+                window.fecharModal('modal-manutencao'); e.target.reset(); window.nav('oficina');
             };
         }
 
-        window.abrirModalCarga = () => {
+        window.abrirModalCarga = function() {
             db.ref(`${DB_ROOT}/frota`).once('value', snap => { let h = '<option value="">1. Viatura Operacional</option>'; if(snap.exists()) { snap.forEach(f => { h += `<option value="${f.val().placa}">${f.val().placa} (${f.val().modelo})</option>`; }); } const cv = document.getElementById('carga-veiculo'); if(cv) cv.innerHTML = h; });
             db.ref(`${DB_ROOT}/equipe`).once('value', snap => { let h = '<option value="">2. Condutor Escalonado</option>'; if(snap.exists()) { snap.forEach(e => { if(e.val().cargo === 'motorista') { h += `<option value="${e.val().email}" data-nome="${e.val().nome}">${e.val().nome}</option>`; } }); } const cm = document.getElementById('carga-motorista'); if(cm) cm.innerHTML = h; });
             db.ref(`${DB_ROOT}/clientes`).once('value', snap => { let h = '<option value="">3. Ponto de Descarga</option>'; if(snap.exists()) { snap.forEach(c => { h += `<option value="${c.val().nome}">${c.val().nome} - ${c.val().cid}</option>`; }); } const cc = document.getElementById('carga-cliente'); if(cc) cc.innerHTML = h; });
-            abrirModal('modal-carga');
+            window.abrirModal('modal-carga');
         };
 
         const frmCarga = document.getElementById('form-carga');
@@ -1108,21 +1106,21 @@
                 e.preventDefault(); const sm = document.getElementById('carga-motorista'); const placa = document.getElementById('carga-veiculo').value;
                 db.ref(`${DB_ROOT}/frota`).orderByChild('placa').equalTo(placa).once('value', snap => { if(snap.exists()) { snap.forEach(f => { db.ref(`${DB_ROOT}/frota/${f.key}/status`).set('Em Rota'); }); } });
                 db.ref(`${DB_ROOT}/cargas`).push({ veiculo: placa, motorista_email: sm.value, motorista_nome: sm.options[sm.selectedIndex].getAttribute('data-nome'), destino: document.getElementById('carga-cliente').value, nfe: document.getElementById('carga-nfe').value, desc: document.getElementById('carga-desc').value, status: 'Em Rota', data: Date.now() });
-                fecharModal('modal-carga'); e.target.reset();
+                window.fecharModal('modal-carga'); e.target.reset();
             };
         }
 
-        window.excluir = (p, id) => { if(confirm("Confirma a eliminação irreversível deste registo?")) db.ref(`${DB_ROOT}/${p}/${id}`).remove(); };
+        window.excluir = function(id, p) { if(confirm("Confirma a eliminação irreversível deste registo?")) db.ref(`${DB_ROOT}/${p}/${id}`).remove(); };
         
-        window.salvarConfiguracoes = () => {
+        window.salvarConfiguracoes = function() {
             const mk = document.getElementById('maps-key').value;
-            db.ref(`${DB_ROOT}/config`).update({ gemini_key: document.getElementById('gemini-key').value, maps_key: mk, cloud_name: document.getElementById('cloud-name').value, upload_preset: document.getElementById('upload-preset').value }).then(() => { alert("As chaves de API foram encriptadas e salvas na Nuvem."); if(mk) loadGoogleMapsScript(); }); 
+            db.ref(`${DB_ROOT}/config`).update({ gemini_key: document.getElementById('gemini-key').value, maps_key: mk, cloud_name: document.getElementById('cloud-name').value, upload_preset: document.getElementById('upload-preset').value }).then(() => { alert("As chaves de API foram encriptadas e salvas na Nuvem."); if(mk) window.carregarGoogleMapsRuntime(); }); 
         };
 
-        // --- F. APP MOTORISTA ---
+        // --- 7. APP MOTORISTA (LÓGICA AO VIVO) ---
         let watchId = null; let veiculoDoRomaneio = null; let listenerCargasMotorista = null;
 
-        function iniciarArquiteturaMotorista() {
+        window.iniciarArquiteturaMotorista = function() {
             const emailCelular = currentUser.email;
             if(listenerCargasMotorista) db.ref(`${DB_ROOT}/cargas`).off('value', listenerCargasMotorista);
             
@@ -1144,19 +1142,19 @@
                     if(cnt) cnt.classList.remove('hidden');
                     
                     let cartoesCarga = '';
-                    meuRomaneio.forEach(c => { cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> Destino (Descarga)</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; });
+                    meuRomaneio.forEach(c => { cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> Destino (Descarga)</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; });
                     const lCargas = document.getElementById('motorista-lista-cargas'); if(lCargas) lCargas.innerHTML = cartoesCarga;
                 } else {
-                    veiculoDoRomaneio = null; if(watchId) desligarGPS();
+                    veiculoDoRomaneio = null; if(watchId) window.desligarGPS();
                     if(st) st.innerHTML = `<div class="p-8 text-center"><i class='bx bxs-coffee-alt text-6xl text-slate-600 mb-4'></i><p class="text-slate-300 font-black text-xl mb-1">Sem Operação Externa</p><p class="text-xs text-slate-500 mt-2 font-medium">Aguarde o Administrador vincular um Romaneio de Viagem para o seu usuário.</p></div>`;
                     if(cnt) cnt.classList.add('hidden');
                     if(btnGps) { btnGps.disabled = true; btnGps.className = "w-48 h-48 bg-slate-900 border-4 border-slate-800 rounded-full flex flex-col items-center justify-center opacity-40 z-10"; document.getElementById('gps-icon').className = "bx bx-navigation text-6xl text-slate-700 mb-2"; document.getElementById('gps-text').className = "font-black text-slate-700 uppercase text-sm tracking-widest"; document.getElementById('gps-text').innerText = "SISTEMA\nBLOQUEADO"; }
                     const msg = document.getElementById('gps-status-msg'); if(msg) msg.innerHTML = "";
                 }
             });
-        }
+        };
 
-        window.motoristaConfirmaEntrega = (id, placa) => { 
+        window.motoristaConfirmaEntrega = function(id, placa) { 
             if(confirm("Confirmar a entrega completa da NFe ao destino? A Base Logística será notificada.")) {
                 db.ref(`${DB_ROOT}/cargas/${id}/status`).set('Entregue'); 
                 db.ref(`${DB_ROOT}/cargas`).once('value', snap => {
@@ -1167,9 +1165,9 @@
             }
         };
 
-        window.toggleGPS = () => { if(watchId) desligarGPS(); else ligarGPS(); };
+        window.toggleGPS = function() { if(watchId) window.desligarGPS(); else window.ligarGPS(); };
 
-        function ligarGPS() {
+        window.ligarGPS = function() {
             if(!navigator.geolocation) return alert("O navegador do seu celular bloqueia leitura de GPS.");
             if(!veiculoDoRomaneio) return alert("Ação negada: Sem veículo atribuído.");
             const btn = document.getElementById('btn-toggle-gps'); const pulse = document.getElementById('gps-pulse');
@@ -1181,12 +1179,12 @@
 
             watchId = navigator.geolocation.watchPosition(
                 (pos) => { db.ref(`${DB_ROOT}/gps_tracking/${veiculoDoRomaneio}`).set({ lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: Date.now(), status: 'online', motorista: currentUser.email.split('@')[0].toUpperCase() }); },
-                (err) => { alert("Por favor, AUTORIZE o site a acessar a sua Localização (GPS) nas permissões do seu celular."); desligarGPS(); },
+                (err) => { alert("Por favor, AUTORIZE o site a acessar a sua Localização (GPS) nas permissões do seu celular."); window.desligarGPS(); },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
-        }
+        };
 
-        function desligarGPS() {
+        window.desligarGPS = function() {
             if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             if(veiculoDoRomaneio) { db.ref(`${DB_ROOT}/gps_tracking/${veiculoDoRomaneio}/status`).set('offline'); }
             const btn = document.getElementById('btn-toggle-gps'); const pulse = document.getElementById('gps-pulse');
@@ -1195,9 +1193,9 @@
             const txt = document.getElementById('gps-text'); if(txt) { txt.className = "font-black text-white uppercase text-sm text-center tracking-widest"; txt.innerText = "INICIAR ROTA\nE LIGAR GPS"; }
             if(pulse) { pulse.classList.add('hidden'); pulse.classList.remove('gps-active-pulse'); }
             const msg = document.getElementById('gps-status-msg'); if(msg) msg.innerText = "Transmissão pausada. A Base não tem mais a sua localização em tempo real.";
-        }
+        };
 
-        window.abrirModalOcorrencia = () => { abrirModal('modal-ocorrencia'); };
+        window.abrirModalOcorrencia = function() { window.abrirModal('modal-ocorrencia'); };
 
         const frmOco = document.getElementById('form-ocorrencia');
         if(frmOco) {
@@ -1225,7 +1223,7 @@
                     btn.innerHTML = "<i class='bx bx-loader-alt bx-spin text-3xl'></i> ESCREVENDO NA BASE...";
                     await db.ref(`${DB_ROOT}/ocorrencias`).push({ veiculo: veiculoDoRomaneio || "Viatura Indeterminada", motorista: currentUser.email, tipo: document.getElementById('oco-tipo').value, valor: document.getElementById('oco-valor').value || 0, desc: document.getElementById('oco-desc').value, imgUrl: imgUrl, data: Date.now() });
                     alert("Operação confirmada. O Setor Financeiro já está com o seu relatório na tela.");
-                    fecharModal('modal-ocorrencia'); e.target.reset();
+                    window.fecharModal('modal-ocorrencia'); e.target.reset();
                 } catch (err) { alert("Falha Sistêmica: " + err.message); } finally { btn.innerHTML = originalBtnHtml; btn.disabled = false; }
             };
         }
