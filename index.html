@@ -837,7 +837,7 @@
             
             if(!directionsService || !org || !placa) return alert("Erro: Selecione a viatura e aguarde o GPS.");
 
-            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Desenhando Rota Inteligente...";
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Extraindo Entregas...";
             routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
 
             const formatarCoord = (str) => {
@@ -852,7 +852,7 @@
             
             const cgSnap = await db.ref(`${DB_ROOT}/cargas`).orderByChild('veiculo').equalTo(placa).once('value');
             const romaneio = [];
-            cgSnap.forEach(c => { if(c.val().status === 'Em Rota') romaneio.push(c.val()); });
+            cgSnap.forEach(c => { if(c.val().status === 'Em Rota') romaneio.push({...c.val(), id: c.key}); });
 
             if(romaneio.length === 0) {
                 btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Iniciar Varredura e Despachar ao Motorista";
@@ -863,57 +863,87 @@
             const clientesBase = [];
             clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
 
+            const geocoder = new google.maps.Geocoder();
             const deliveryPoints = [];
             
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Validando Coordenadas...";
+            
+            // Puxa as coordenadas (geocodifica se necessário, sequencialmente para não dar Rate Limit)
             for (const carga of romaneio) {
                 const cliMatch = clientesBase.find(c => c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
                 if (cliMatch && cliMatch.lat && cliMatch.lng) {
-                    deliveryPoints.push({ lat: parseFloat(cliMatch.lat), lng: parseFloat(cliMatch.lng), nome: carga.destino });
+                    deliveryPoints.push({ lat: parseFloat(cliMatch.lat), lng: parseFloat(cliMatch.lng), nome: carga.destino, id: carga.id, cargaObj: carga });
                 } else {
-                    deliveryPoints.push({ query: carga.endereco_destino || carga.destino, nome: carga.destino });
+                    // Esperar para evitar OVER_QUERY_LIMIT do Google
+                    await new Promise(resolve => {
+                        geocoder.geocode({ address: carga.endereco_destino || carga.destino }, (res, status) => {
+                            if (status === 'OK' && res[0]) {
+                                deliveryPoints.push({ lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng(), nome: carga.destino, id: carga.id, cargaObj: carga });
+                            }
+                            setTimeout(resolve, 300);
+                        });
+                    });
                 }
             }
 
-            let finalDestination = deliveryPoints[deliveryPoints.length - 1];
-            let waypointsList = [];
-
-            if(deliveryPoints.length > 1 && typeof originCoord === 'object') {
-                let maxDist = -1;
-                let destIndex = 0;
-                const origLatLng = new google.maps.LatLng(originCoord.lat, originCoord.lng);
-                
-                deliveryPoints.forEach((pt, index) => {
-                    if(pt.lat && pt.lng) {
-                        const ptLatLng = new google.maps.LatLng(pt.lat, pt.lng);
-                        const dist = google.maps.geometry.spherical.computeDistanceBetween(origLatLng, ptLatLng);
-                        if (dist > maxDist) { maxDist = dist; destIndex = index; }
-                    }
-                });
-
-                finalDestination = deliveryPoints[destIndex];
-                deliveryPoints.forEach((pt, index) => {
-                    if (index !== destIndex) {
-                        waypointsList.push({ location: (pt.lat ? pt : pt.query), stopover: true });
-                    }
-                });
-            } else if (deliveryPoints.length > 1) {
-                finalDestination = deliveryPoints[deliveryPoints.length - 1].lat ? deliveryPoints[deliveryPoints.length - 1] : deliveryPoints[deliveryPoints.length - 1].query;
-                deliveryPoints.slice(0, -1).forEach(pt => waypointsList.push({ location: (pt.lat ? pt : pt.query), stopover: true }));
+            if (deliveryPoints.length === 0) {
+                btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Iniciar Varredura";
+                return alert("Falha ao localizar os endereços de entrega no mapa.");
             }
 
-            document.getElementById('destino-rota').value = (finalDestination.nome || finalDestination.query || finalDestination) + " (Ponto Mais Distante)";
+            let originLatLng;
+            if (typeof originCoord === 'object') {
+                originLatLng = originCoord;
+            } else {
+                await new Promise(resolve => {
+                    geocoder.geocode({ address: originCoord }, (res, status) => {
+                        if (status === 'OK' && res[0]) { originLatLng = { lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng() }; } 
+                        else { originLatLng = deliveryPoints[0]; }
+                        resolve();
+                    });
+                });
+            }
+
+            // O SEGREDO 1: GREEDY SORT (O Algoritmo de Proximidade Absoluta - Pula a ordem do painel e vai pela rua)
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Otimizando Rota...";
+            
+            let unvisited = [...deliveryPoints];
+            let sortedPoints = [];
+            let currentPos = originLatLng;
+
+            while(unvisited.length > 0) {
+                let minDist = Infinity;
+                let closestIdx = -1;
+                for(let i=0; i < unvisited.length; i++) {
+                    const pt = unvisited[i];
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(currentPos.lat, currentPos.lng),
+                        new google.maps.LatLng(pt.lat, pt.lng)
+                    );
+                    if(dist < minDist) { minDist = dist; closestIdx = i; }
+                }
+                const closestPt = unvisited[closestIdx];
+                sortedPoints.push(closestPt);
+                currentPos = closestPt;
+                unvisited.splice(closestIdx, 1);
+            }
+
+            const finalDestination = sortedPoints[sortedPoints.length - 1];
+            const waypointsList = sortedPoints.slice(0, -1).map(pt => ({ location: new google.maps.LatLng(pt.lat, pt.lng), stopover: true }));
+
+            document.getElementById('destino-rota').value = finalDestination.nome + " (Destino Mais Longe)";
 
             const req = {
-                origin: originCoord,
-                destination: (finalDestination.lat ? finalDestination : finalDestination.query),
+                origin: new google.maps.LatLng(originLatLng.lat, originLatLng.lng),
+                destination: new google.maps.LatLng(finalDestination.lat, finalDestination.lng),
                 waypoints: waypointsList,
-                optimizeWaypoints: true, 
+                optimizeWaypoints: false, // Como nós já ordenamos pela matemática perfeita acima, desligamos o chute do Google.
                 travelMode: 'DRIVING'
             };
 
             directionsService.route(req, (res, status) => {
                 if (status === 'OK') {
-                    window.processarCruzamentoRadial(res, btn, clientesBase, romaneio, placa);
+                    window.processarCruzamentoRadial(res, btn, clientesBase, romaneio, placa, geocoder);
                 } else {
                     btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Tentar Novamente";
                     alert("A Google Maps falhou ao traçar esta rota. Erro: " + status);
@@ -921,7 +951,7 @@
             });
         };
 
-        window.processarCruzamentoRadial = async function(res, btn, clientesBase, romaneio, veiculoSelecionado) {
+        window.processarCruzamentoRadial = async function(res, btn, clientesBase, romaneio, veiculoSelecionado, geocoder) {
             directionsRenderer.setDirections(res);
             
             if (!window.trafficLayer) window.trafficLayer = new google.maps.TrafficLayer();
@@ -949,29 +979,11 @@
                 });
             });
             
-            const densePath = [];
-            for (let i = 0; i < detailedPath.length - 1; i++) {
-                const p1 = detailedPath[i];
-                const p2 = detailedPath[i+1];
-                densePath.push(p1);
-                const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                if (dist > 3000) { 
-                    const fractionSteps = Math.ceil(dist / 3000);
-                    for (let j = 1; j < fractionSteps; j++) {
-                        densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
-                    }
-                }
-            }
-            if (detailedPath.length > 0) densePath.push(detailedPath[detailedPath.length - 1]);
-
-            const routePolyline = new google.maps.Polyline({ path: detailedPath });
-
+            // Função Infalível de Distância da Rua
             const isClientInRadar = (clientLatLng) => {
-                if (google.maps.geometry.poly.isLocationOnEdge(clientLatLng, routePolyline, 0.05)) return true;
-                for(let i=0; i < densePath.length; i++) {
-                    if(google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, densePath[i]) <= 15000) {
-                        return true;
-                    }
+                for(let i=0; i < detailedPath.length; i += 3) { 
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(clientLatLng, detailedPath[i]);
+                    if (dist <= 15000) return true; // Exatos 15km
                 }
                 return false;
             };
@@ -985,29 +997,23 @@
                 routeMarkers.push(truckMarker);
             }
 
-            btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Mapeando Raio Geográfico...`;
+            btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Analisando Clientes (Sem Pulos)...`;
             
             const clientesNoCaminho = [];
             const nomesEntregasOficiais = romaneio.map(r => r.destino.toUpperCase());
-            const geocoder = new google.maps.Geocoder();
 
-            // SOLUÇÃO 3: RESTAURAÇÃO DO GEOCODER (A Dijo sem GPS agora será encontrada via texto híbrido)
-            const promessas = clientesBase.map(cli => {
-                return new Promise((resolve) => {
-                    // Ignora as entregas que já estão no romaneio oficial
-                    if(nomesEntregasOficiais.includes(cli.nome.toUpperCase())) { resolve(); return; }
+            // O SEGREDO 2: Varredura Sequencial Implacável para evitar bloqueios OVER_QUERY_LIMIT
+            for (const cli of clientesBase) {
+                if(nomesEntregasOficiais.includes(cli.nome.toUpperCase())) continue; // Filtro de exclusão: Já é entrega, tira do radar!
 
-                    if (cli.lat && cli.lng) {
-                        const localCliente = new google.maps.LatLng(parseFloat(cli.lat), parseFloat(cli.lng));
-                        if (isClientInRadar(localCliente)) {
-                            clientesNoCaminho.push({
-                                ...cli, 
-                                location: { lat: localCliente.lat(), lng: localCliente.lng() } 
-                            });
-                        }
-                        resolve();
-                    } else {
-                        // O Cliente não tem GPS exato (foi cadastrado antigo ou à mão)
+                if (cli.lat && cli.lng) {
+                    const localCliente = new google.maps.LatLng(parseFloat(cli.lat), parseFloat(cli.lng));
+                    if (isClientInRadar(localCliente)) {
+                        clientesNoCaminho.push({ ...cli, location: { lat: localCliente.lat(), lng: localCliente.lng() } });
+                    }
+                } else {
+                    // Sem Lat/Lng - Aciona o Geocoder de forma sequencial com Delay de Respiro (A Menil e a Dijo entram aqui!)
+                    await new Promise(resolveDelay => {
                         geocoder.geocode({ address: `${cli.end || ''}, ${cli.cid}`.trim() }, (results, geoStatus) => {
                             if (geoStatus === 'OK' && results[0]) {
                                 const localCliente = results[0].geometry.location;
@@ -1019,13 +1025,11 @@
                                     });
                                 }
                             }
-                            resolve();
+                            setTimeout(resolveDelay, 250); // Delay de respiro para Google não bloquear as requisições em massa
                         });
-                    }
-                });
-            });
-
-            await Promise.all(promessas);
+                    });
+                }
+            }
 
             btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Rota Processada com Sucesso";
             setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Iniciar Nova Varredura"; }, 3000);
@@ -1329,7 +1333,7 @@
         // --- F. APP MOBILE DO MOTORISTA ---
         let watchId = null; let veiculoDoRomaneio = null; let listenerCargasMotorista = null; let listenerRadarMotorista = null;
 
-        // O Segredo 3: Ordem Visual Inteligente do Motorista
+        // O Segredo 3: O App Motorista clona o Algoritmo Greedy do Painel para mostrar a mesma ordem visual
         window.processarEExibirMapaMotorista = async function(romaneio, placa) {
             document.getElementById('container-mapa-mot').classList.remove('hidden');
             const overlay = document.getElementById('map-motorista-overlay');
@@ -1337,78 +1341,83 @@
             window.checkMap('motorista');
             
             const gps = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
-            let origemReq = "São José do Rio Preto, SP";
+            let originLatLng;
+            
+            const geocoder = new google.maps.Geocoder();
+
             if(gps.exists() && gps.val().status === 'online') {
-                origemReq = { lat: parseFloat(gps.val().lat), lng: parseFloat(gps.val().lng) };
+                originLatLng = { lat: parseFloat(gps.val().lat), lng: parseFloat(gps.val().lng) };
+            } else {
+                // Fallback caso não tenha satélite vivo
+                originLatLng = { lat: -20.8, lng: -49.3 };
             }
             
             const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
-            const mapClientes = {};
-            if(clSnap.exists()) {
-                clSnap.forEach(cli => {
-                    const cVal = cli.val();
-                    if(cVal.lat && cVal.lng) {
-                        mapClientes[cVal.end || cVal.cid] = { lat: parseFloat(cVal.lat), lng: parseFloat(cVal.lng) };
-                        mapClientes[cVal.nome] = { lat: parseFloat(cVal.lat), lng: parseFloat(cVal.lng) };
-                    }
-                });
+            const clientesBase = [];
+            clSnap.forEach(c => clientesBase.push({...c.val(), id: c.key}));
+
+            const deliveryPoints = [];
+            
+            // Identifica as Coordenadas Reais
+            for (const carga of romaneio) {
+                const cliMatch = clientesBase.find(c => c.nome.toUpperCase() === carga.destino.toUpperCase() || c.cid === (carga.endereco_destino||""));
+                if (cliMatch && cliMatch.lat && cliMatch.lng) {
+                    deliveryPoints.push({ lat: parseFloat(cliMatch.lat), lng: parseFloat(cliMatch.lng), nome: carga.destino, id: carga.id, cargaObj: carga });
+                } else {
+                    await new Promise(resolve => {
+                        geocoder.geocode({ address: carga.endereco_destino || carga.destino }, (res, status) => {
+                            if (status === 'OK' && res[0]) {
+                                deliveryPoints.push({ lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng(), nome: carga.destino, id: carga.id, cargaObj: carga });
+                            }
+                            setTimeout(resolve, 300);
+                        });
+                    });
+                }
             }
             
-            let pts = [];
-            romaneio.forEach(c => {
-                const dstStr = c.endereco_destino || c.destino;
-                pts.push(mapClientes[dstStr] || mapClientes[c.destino] || dstStr);
-            });
-            
-            if(pts.length === 0) return;
+            if(deliveryPoints.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
 
-            let finalDest = pts[pts.length - 1];
-            let wptsReq = [];
-            let indexOfDest = pts.length - 1;
+            // Greedy Sort no Motorista também!
+            let unvisited = [...deliveryPoints];
+            let sortedPoints = [];
+            let currentPos = originLatLng;
 
-            if (pts.length > 1 && typeof origemReq === 'object') {
-                let maxD = -1; 
-                const origL = new google.maps.LatLng(origemReq.lat, origemReq.lng);
-                pts.forEach((p, i) => {
-                    if(p.lat) {
-                        const pL = new google.maps.LatLng(p.lat, p.lng);
-                        const d = google.maps.geometry.spherical.computeDistanceBetween(origL, pL);
-                        if(d > maxD) { maxD = d; indexOfDest = i; }
-                    }
-                });
-                finalDest = pts[indexOfDest];
-                pts.forEach((p, i) => { if(i !== indexOfDest) wptsReq.push({location: p, stopover: true}); });
-            } else if (pts.length > 1) {
-                pts.slice(0, -1).forEach(p => wptsReq.push({location: p, stopover: true}));
+            while(unvisited.length > 0) {
+                let minDist = Infinity;
+                let closestIdx = -1;
+                for(let i=0; i < unvisited.length; i++) {
+                    const pt = unvisited[i];
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(currentPos.lat, currentPos.lng),
+                        new google.maps.LatLng(pt.lat, pt.lng)
+                    );
+                    if(dist < minDist) { minDist = dist; closestIdx = i; }
+                }
+                const closestPt = unvisited[closestIdx];
+                sortedPoints.push(closestPt);
+                currentPos = closestPt;
+                unvisited.splice(closestIdx, 1);
             }
+
+            const finalDestination = sortedPoints[sortedPoints.length - 1];
+            const waypointsList = sortedPoints.slice(0, -1).map(pt => ({ location: new google.maps.LatLng(pt.lat, pt.lng), stopover: true }));
             
             if(!directionsService) directionsService = new google.maps.DirectionsService();
             
             directionsService.route({
-                origin: origemReq,
-                destination: finalDest,
-                waypoints: wptsReq,
-                optimizeWaypoints: true,
+                origin: new google.maps.LatLng(originLatLng.lat, originLatLng.lng),
+                destination: new google.maps.LatLng(finalDestination.lat, finalDestination.lng),
+                waypoints: waypointsList,
+                optimizeWaypoints: false,
                 travelMode: 'DRIVING'
             }, (res, status) => {
                 if(overlay) overlay.classList.add('hidden');
-                
-                let orderedRomaneio = [];
-                if(status === 'OK') {
-                    if(dirRendererMot) dirRendererMot.setDirections(res);
-                    
-                    const waypointsOriginais = romaneio.filter((r, idx) => idx !== indexOfDest);
-                    const order = res.routes[0].waypoint_order; 
-                    
-                    order.forEach(ordIdx => { orderedRomaneio.push(waypointsOriginais[ordIdx]); });
-                    orderedRomaneio.push(romaneio[indexOfDest]); 
-                } else {
-                    orderedRomaneio = romaneio; 
-                }
+                if(status === 'OK' && dirRendererMot) dirRendererMot.setDirections(res);
 
                 let cartoesCarga = '';
-                orderedRomaneio.forEach((c, index) => { 
-                    const labelOrdem = (index === orderedRomaneio.length - 1) ? "DESTINO FINAL (OFICIAL)" : `PARADA ${index + 1} (OTIMIZADA)`;
+                sortedPoints.forEach((pt, index) => { 
+                    const c = pt.cargaObj;
+                    const labelOrdem = (index === sortedPoints.length - 1) ? "DESTINO FINAL (OFICIAL)" : `PARADA ${index + 1} (OTIMIZADA)`;
                     cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> ${labelOrdem}</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; 
                 });
                 const lCargas = document.getElementById('motorista-lista-cargas'); 
