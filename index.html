@@ -18,8 +18,10 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         .hidden-view { display: none !important; }
-        #map-rastreio, #map-rota { height: 100%; min-height: 400px; border-radius: 0.75rem; z-index: 10; background-color: #e2e8f0; }
+        #map-rastreio, #map-rota, #map-motorista { height: 100%; min-height: 400px; border-radius: 0.75rem; z-index: 10; background-color: #e2e8f0; }
         
+        #map-motorista { min-height: 100%; border-radius: 1.5rem; }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -439,6 +441,15 @@
             <p id="gps-status-msg" class="text-[11px] text-slate-500 text-center font-bold uppercase mb-8 px-8 leading-relaxed"></p>
 
             <div id="motorista-cargas-container" class="w-full max-w-sm hidden space-y-6">
+                <!-- Div do Mapa Motorista (O Segredo 3 da Rota Visual) -->
+                <div id="container-mapa-mot" class="w-full h-64 bg-slate-800 rounded-3xl border-4 border-slate-700 overflow-hidden shadow-2xl relative hidden">
+                    <div id="map-motorista" class="w-full h-full"></div>
+                    <div id="map-motorista-overlay" class="absolute inset-0 bg-slate-900/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
+                        <div class="loader mb-2 !border-t-blue-500"></div>
+                        <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Otimizando Logística...</p>
+                    </div>
+                </div>
+
                 <!-- Seção Entregas Oficiais -->
                 <div id="motorista-lista-cargas"></div>
 
@@ -639,12 +650,12 @@
         const secondaryAuth = secondaryApp.auth();
 
         let currentUser = null; 
-        let currentDriverName = "MOTORISTA"; // Captura do Nome Real
+        let currentDriverName = "MOTORISTA"; 
         let GEMINI_API_KEY = ""; let GOOGLE_MAPS_KEY = "";
         let CLOUDINARY_CLOUD_NAME = ""; let CLOUDINARY_UPLOAD_PRESET = ""; let CLOUDINARY_BYTES_USED = 0;
         let mapsLoaded = false; let mapsLoading = false;
-        let mapRastreioObj = null, mapRotaObj = null;
-        let directionsService = null, directionsRenderer = null;
+        let mapRastreioObj = null, mapRotaObj = null, mapMotoristaObj = null;
+        let directionsService = null, directionsRenderer = null, dirRendererMot = null;
         let markersFrota = {}; let routeMarkers = []; let activePlaceDetails = null;
         let clienteGooglePlaceLocation = null;
 
@@ -664,7 +675,6 @@
                 m.classList.add('hidden');
             }
         };
-        // ----------------------------------------
 
         window.nav = function(target) {
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -707,7 +717,6 @@
                 document.getElementById('login-view').classList.add('hidden-view');
                 carregarConfiguracoesAED();
                 
-                // Buscar nome real do usuário para o Timeline da Rota
                 currentDriverName = user.email.split('@')[0].toUpperCase();
                 const eqSnap = await db.ref(`${DB_ROOT}/equipe/${user.uid}`).once('value');
                 if (eqSnap.exists()) currentDriverName = eqSnap.val().nome;
@@ -790,6 +799,13 @@
                     directionsRenderer = new google.maps.DirectionsRenderer({ map: mapRotaObj, polylineOptions: { strokeColor: "#0f172a", strokeWeight: 6, strokeOpacity: 0.8 } });
                 }
             }
+            // O Segredo 3: O Mapa no Painel do Motorista Mobile
+            if(type === 'motorista' && !document.getElementById('motorista-view').classList.contains('hidden-view')) {
+                if(!mapMotoristaObj) {
+                    mapMotoristaObj = new google.maps.Map(document.getElementById('map-motorista'), { center: {lat:-20.8, lng:-49.3}, zoom: 12, disableDefaultUI: true });
+                    dirRendererMot = new google.maps.DirectionsRenderer({ map: mapMotoristaObj, polylineOptions: { strokeColor: "#3b82f6", strokeWeight: 5 }});
+                }
+            }
         };
 
         window.popularSelectVeiculosRadar = function() {
@@ -800,7 +816,6 @@
             });
         };
 
-        // --- Mapeamento em Memória das Coordenadas Exatas para Waypoints ---
         window.preencherRotaVeiculo = async function() {
             const p = document.getElementById('radar-veiculo').value; if(!p) return;
             document.getElementById('origem-rota').value = "Puxando Satélite...";
@@ -851,7 +866,7 @@
             const btn = document.getElementById('btn-analisar-rota');
             if(!directionsService || !org || !dst) return alert("Erro: Mapas indisponíveis ou campos vazios.");
 
-            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Traçando Rota Real...";
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Traçando Rota Otimizada...";
             routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
 
             const formatarCoord = (str) => {
@@ -871,10 +886,12 @@
             }
 
             const callRoute = (destReq) => {
+                // O SEGREDO 1 AQUI: optimizeWaypoints: true faz a reordenação logística inteligente (Furlan vs Chevron)
                 const requestCompleto = { 
                     origin: originFormatado, 
                     destination: destReq, 
                     waypoints: wpts, 
+                    optimizeWaypoints: true, 
                     travelMode: 'DRIVING',
                     drivingOptions: { departureTime: new Date(Date.now()), trafficModel: 'bestguess' }
                 };
@@ -994,12 +1011,16 @@
             const clientesNoCaminho = [];
             const geocoder = new google.maps.Geocoder();
 
+            // O SEGREDO 2 AQUI: Extrair APENAS strings lat/lng puras para o Firebase não travar com a function de geometry
             const promessas = meusClientes.map(cli => {
                 return new Promise((resolve) => {
                     if (cli.lat && cli.lng) {
                         const localCliente = new google.maps.LatLng(parseFloat(cli.lat), parseFloat(cli.lng));
                         if (isClientInRadar(localCliente)) { 
-                            clientesNoCaminho.push({...cli, location: localCliente});
+                            clientesNoCaminho.push({
+                                ...cli, 
+                                location: { lat: localCliente.lat(), lng: localCliente.lng() } 
+                            });
                         }
                         resolve();
                     } else {
@@ -1007,7 +1028,11 @@
                             if (geoStatus === 'OK' && results[0]) {
                                 const localCliente = results[0].geometry.location;
                                 if (isClientInRadar(localCliente)) {
-                                    clientesNoCaminho.push({...cli, location: localCliente, end: results[0].formatted_address});
+                                    clientesNoCaminho.push({
+                                        ...cli, 
+                                        location: { lat: localCliente.lat(), lng: localCliente.lng() },
+                                        end: results[0].formatted_address
+                                    });
                                 }
                             }
                             resolve();
@@ -1021,7 +1046,6 @@
             btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Radar Concluído com Sucesso";
             setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Iniciar Nova Varredura"; }, 3000);
             
-            // O Segredo 1: Gravar a lista de visitas ativas na base de dados para o App do Motorista
             const veiculoSelecionado = document.getElementById('radar-veiculo').value;
             window.renderizarRadarIntegral(clientesNoCaminho, veiculoSelecionado);
         };
@@ -1097,8 +1121,6 @@
                 snap.forEach(c => {
                     const d = c.val(); if(d.status === 'Em Rota') rCount++;
                     const stCls = d.status === 'Entregue' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
-                    
-                    // O Segredo 3: Informação de Auditoria na Tabela
                     const infosEntrega = d.data_entrega ? `<div class="mt-2 text-[8px] font-black text-green-600 bg-green-50 p-1.5 rounded uppercase tracking-widest border border-green-200"><i class='bx bx-check-double'></i> ${new Date(d.data_entrega).toLocaleString('pt-BR')} <br>POR: ${d.entregue_por}</div>` : '';
 
                     h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><span class="px-2 py-1 rounded-lg font-black text-[9px] uppercase ${stCls}">${d.status}</span>${infosEntrega}</td><td class="p-4 font-black tracking-widest text-slate-800 uppercase">${d.veiculo}<br><span class="text-[8px] text-red-500 font-bold">${d.motorista_nome || ''}</span></td><td class="p-4 font-bold text-slate-700 uppercase"><i class='bx bxs-map text-red-500'></i> ${d.destino}</td><td class="p-4 text-[9px] text-slate-400 font-medium">NFe: ${d.nfe}<br>${d.desc}</td><td class="p-4 text-center"><button onclick="window.excluir('cargas', '${c.key}')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
@@ -1134,11 +1156,10 @@
                 const lo = document.getElementById('lista-oficina'); if(lo) lo.innerHTML = h;
             });
 
-            // O Segredo 4: Nova Timeline Cronológica para Auditoria (Ocorrências e Visitas)
             db.ref(`${DB_ROOT}/ocorrencias`).on('value', snap => {
                 const eventos = [];
                 snap.forEach(o => { eventos.push({...o.val(), id: o.key}); });
-                eventos.sort((a,b) => b.data - a.data); // Ordem decrescente (mais recente primeiro)
+                eventos.sort((a,b) => b.data - a.data); 
 
                 let h = ''; let oCount = eventos.length;
                 eventos.forEach(d => {
@@ -1197,7 +1218,6 @@
             }
         };
 
-        // --- SUBMITS DOS FORMULÁRIOS ---
         const frmEquipe = document.getElementById('form-equipe');
         if(frmEquipe) {
             frmEquipe.onsubmit = async (e) => { 
@@ -1235,7 +1255,6 @@
         const frmFrota = document.getElementById('form-frota');
         if(frmFrota) { frmFrota.onsubmit = (e) => { e.preventDefault(); db.ref(`${DB_ROOT}/frota`).push({ placa: document.getElementById('fr-placa').value.toUpperCase(), modelo: document.getElementById('fr-modelo').value, status: document.getElementById('fr-status').value }); window.fecharModal('modal-frota'); e.target.reset(); }; }
 
-        // REGISTO DE CLIENTE - SALVANDO LATITUDE E LONGITUDE NO FIREBASE PARA GARANTIR RADAR 100% EXATO
         const frmCliente = document.getElementById('form-cliente');
         if(frmCliente) { 
             frmCliente.onsubmit = (e) => { 
@@ -1248,11 +1267,9 @@
                 const cid = document.getElementById('cli-cidade').value;
                 const end = document.getElementById('cli-end').value;
 
-                // SE O USUARIO ESCOLHEU A SUGESTÃO DO GOOGLE (AUTOCOMPLETE)
                 if (clienteGooglePlaceLocation) {
                     window.finalizarCadastro(nome, tel, cid, clienteGooglePlaceLocation.formatted_address, clienteGooglePlaceLocation.lat, clienteGooglePlaceLocation.lng, btn, oldText);
                 } 
-                // SE O USUARIO DIGITOU NA MÃO E IGNOROU O GOOGLE
                 else if (window.google && google.maps.Geocoder) {
                     const geocoder = new google.maps.Geocoder();
                     geocoder.geocode({ address: `${end}, ${cid}` }, (res, stat) => {
@@ -1275,7 +1292,7 @@
         window.finalizarCadastro = function(nome, tel, cid, end, lat, lng, btn, oldText) {
             db.ref(`${DB_ROOT}/clientes`).push({ nome, tel, cid, end, lat, lng }).then(() => {
                 window.fecharModal('modal-cliente'); if(document.getElementById('form-cliente')) document.getElementById('form-cliente').reset();
-                clienteGooglePlaceLocation = null; // reseta para o próximo
+                clienteGooglePlaceLocation = null; 
                 btn.innerHTML = oldText; btn.disabled = false;
                 if(lat && lng) alert("Loja registada. As coordenadas exatas foram ancoradas para rastreio pelo Radar.");
             });
@@ -1331,6 +1348,64 @@
         // --- F. APP MOBILE DO MOTORISTA ---
         let watchId = null; let veiculoDoRomaneio = null; let listenerCargasMotorista = null; let listenerRadarMotorista = null;
 
+        // O Segredo 3: A Rota visualmente plotada para o motorista no aplicativo
+        window.carregarMapaMotorista = async function(romaneio, placa) {
+            document.getElementById('container-mapa-mot').classList.remove('hidden');
+            const overlay = document.getElementById('map-motorista-overlay');
+            if(overlay) overlay.classList.remove('hidden');
+            
+            window.checkMap('motorista');
+            
+            const gps = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
+            let origemReq = "São José do Rio Preto, SP";
+            if(gps.exists() && gps.val().status === 'online') {
+                origemReq = { lat: parseFloat(gps.val().lat), lng: parseFloat(gps.val().lng) };
+            } else if (navigator.geolocation) {
+                // Tenta puxar a origem real do telemovel do motorista na hora
+                navigator.geolocation.getCurrentPosition(pos => {
+                    origemReq = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                });
+            }
+            
+            const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
+            const mapClientes = {};
+            if(clSnap.exists()) {
+                clSnap.forEach(cli => {
+                    const cVal = cli.val();
+                    if(cVal.lat && cVal.lng) {
+                        mapClientes[cVal.end || cVal.cid] = { lat: parseFloat(cVal.lat), lng: parseFloat(cVal.lng) };
+                        mapClientes[cVal.nome] = { lat: parseFloat(cVal.lat), lng: parseFloat(cVal.lng) };
+                    }
+                });
+            }
+            
+            let pts = [];
+            romaneio.forEach(c => {
+                const dstStr = c.endereco_destino || c.destino;
+                pts.push(mapClientes[dstStr] || mapClientes[c.destino] || dstStr);
+            });
+            
+            if(pts.length === 0) { if(overlay) overlay.classList.add('hidden'); return; }
+            
+            const destReq = pts[pts.length - 1];
+            const wptsReq = pts.length > 1 ? pts.slice(0, -1).map(p => ({ location: p, stopover: true })) : [];
+            
+            if(!directionsService) directionsService = new google.maps.DirectionsService();
+            
+            directionsService.route({
+                origin: origemReq,
+                destination: destReq,
+                waypoints: wptsReq,
+                optimizeWaypoints: true,
+                travelMode: 'DRIVING'
+            }, (res, status) => {
+                if(overlay) overlay.classList.add('hidden');
+                if(status === 'OK' && dirRendererMot) {
+                    dirRendererMot.setDirections(res);
+                }
+            });
+        };
+
         window.iniciarArquiteturaMotorista = function() {
             const emailCelular = currentUser.email;
             if(listenerCargasMotorista) db.ref(`${DB_ROOT}/cargas`).off('value', listenerCargasMotorista);
@@ -1343,23 +1418,24 @@
 
                 if(meuRomaneio.length > 0) {
                     veiculoDoRomaneio = placaEscalada; 
-                    if(st) st.innerHTML = `<div class="bg-blue-600 text-white rounded-t-2xl p-3 font-black tracking-widest text-xs uppercase shadow-sm flex items-center justify-center gap-2"><i class='bx bx-check-shield text-lg'></i> Carga Autorizada</div><div class="p-5 bg-slate-800 rounded-b-2xl border-x border-b border-slate-700 shadow-inner"><p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Viatura Designada:</p><p class="text-4xl font-black text-white tracking-widest drop-shadow-md">${placaEscalada}</p></div>`;
+                    if(st) st.innerHTML = `<div class="bg-blue-600 text-white rounded-t-2xl p-3 font-black tracking-widest text-xs uppercase shadow-sm flex items-center justify-center gap-2"><i class='bx bx-check-shield text-lg'></i> Missão Atribuída</div><div class="p-5 bg-slate-800 rounded-b-2xl border-x border-b border-slate-700 shadow-inner"><p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Viatura Designada:</p><p class="text-4xl font-black text-white tracking-widest drop-shadow-md">${placaEscalada}</p></div>`;
                     if(btnGps) btnGps.disabled = false;
                     if(!watchId && btnGps) { 
                         btnGps.className = "w-48 h-48 bg-slate-900 border-4 border-blue-500 rounded-full flex flex-col items-center justify-center shadow-[0_0_40px_rgba(59,130,246,0.6)] z-10 transition transform hover:scale-105 active:scale-95"; 
                         document.getElementById('gps-icon').className = "bx bx-power-off text-6xl text-blue-400 mb-2 drop-shadow-md"; document.getElementById('gps-text').className = "font-black text-white uppercase text-sm text-center tracking-widest"; document.getElementById('gps-text').innerText = "INICIAR ROTA\nE LIGAR GPS"; 
                     }
-                    const msg = document.getElementById('gps-status-msg'); if(msg) msg.innerHTML = "Toque no botão central acima para iniciar a missão e ativar o rastreador.";
+                    const msg = document.getElementById('gps-status-msg'); if(msg) msg.innerHTML = "Toque no botão central acima para iniciar a missão e ativar o rastreador e o mapa.";
                     if(cnt) cnt.classList.remove('hidden');
                     
                     let cartoesCarga = '';
-                    meuRomaneio.forEach(c => { cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> Destino (Descarga)</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; });
+                    meuRomaneio.forEach(c => { cartoesCarga += `<div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden mb-5"><div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div><p class="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest flex items-center gap-1"><i class='bx bx-map-pin'></i> Destino (Descarga Oficial)</p><p class="text-2xl font-black text-white mb-4 leading-tight">${c.destino}</p><div class="bg-slate-900 p-4 rounded-2xl mb-5 border border-slate-700 shadow-inner"><p class="text-sm font-black text-white border-b border-slate-800 pb-3 mb-3 flex items-center justify-between"><span class="text-slate-400 font-medium text-xs uppercase tracking-widest flex items-center gap-1"><i class='bx bx-barcode'></i> Doc. NFe:</span> <span class="text-blue-400 text-lg">${c.nfe}</span></p><p class="text-sm text-slate-300 font-medium leading-relaxed">${c.desc}</p></div><button onclick="window.motoristaConfirmaEntrega('${c.id}', '${c.veiculo}')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 rounded-2xl flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 border border-green-400 uppercase tracking-widest text-sm"><i class='bx bx-check-double text-2xl drop-shadow'></i> Confirmar Descarga</button></div>`; });
                     const lCargas = document.getElementById('motorista-lista-cargas'); if(lCargas) lCargas.innerHTML = cartoesCarga;
 
-                    // O Segredo 2: Sincronização em Tempo Real do Radar de IA com a Tela do Motorista
+                    window.carregarMapaMotorista(meuRomaneio, placaEscalada);
+
                     if(listenerRadarMotorista) db.ref(`${DB_ROOT}/radar_ativo/${veiculoDoRomaneio}`).off('value', listenerRadarMotorista);
                     listenerRadarMotorista = db.ref(`${DB_ROOT}/radar_ativo/${veiculoDoRomaneio}`).on('value', rSnap => {
-                        let htmlVisitas = '<div class="w-full border-t border-slate-700 pt-6 mt-2"><h4 class="text-xs font-black text-amber-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><i class="bx bx-radar text-lg"></i> Clientes no Caminho</h4>';
+                        let htmlVisitas = '<div class="w-full border-t border-slate-700 pt-6 mt-2"><h4 class="text-xs font-black text-amber-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><i class="bx bx-radar text-lg animate-pulse"></i> Visitas de Radar na Rota</h4>';
                         let temVisitas = false;
                         
                         if(rSnap.exists()) {
@@ -1377,7 +1453,7 @@
                         }
                         
                         if(!temVisitas) {
-                            htmlVisitas += `<p class="text-[10px] text-slate-500 text-center italic bg-slate-800 p-4 rounded-xl border border-slate-700 font-bold">O Radar Central não despachou visitas para este percurso.</p>`;
+                            htmlVisitas += `<p class="text-[10px] text-slate-500 text-center italic bg-slate-800 p-4 rounded-xl border border-slate-700 font-bold">O Radar IA não despachou visitas de oportunidade para este percurso.</p>`;
                         }
                         htmlVisitas += '</div>';
                         
@@ -1387,6 +1463,7 @@
 
                 } else {
                     veiculoDoRomaneio = null; if(watchId) window.desligarGPS();
+                    document.getElementById('container-mapa-mot').classList.add('hidden');
                     if(listenerRadarMotorista) { db.ref(`${DB_ROOT}/radar_ativo/${veiculoDoRomaneio}`).off('value', listenerRadarMotorista); listenerRadarMotorista = null; }
                     
                     if(st) st.innerHTML = `<div class="p-8 text-center"><i class='bx bxs-coffee-alt text-6xl text-slate-600 mb-4'></i><p class="text-slate-300 font-black text-xl mb-1">Sem Operação Externa</p><p class="text-xs text-slate-500 mt-2 font-medium">Aguarde o Administrador vincular um Romaneio de Viagem para o seu usuário.</p></div>`;
@@ -1419,10 +1496,9 @@
                     const cliNome = document.getElementById('vis-cliente-nome').value;
                     const cliId = document.getElementById('vis-cliente-id').value;
 
-                    // Grava na timeline principal de Ocorrências (Auditoria) com Autoria Exata
                     await db.ref(`${DB_ROOT}/ocorrencias`).push({ 
                         veiculo: veiculoDoRomaneio || "Indeterminado", 
-                        motorista: currentDriverName, // Autoria Exata
+                        motorista: currentDriverName, 
                         tipo: `Visita Comercial`, 
                         valor: valor, 
                         desc: `CLIENTE: ${cliNome} | AÇÃO: ${acao} | OBS: ${obs}`, 
@@ -1430,7 +1506,6 @@
                         data: Date.now() 
                     });
 
-                    // Remove do Radar Ativo do motorista para "limpar a tela" da missão
                     if(veiculoDoRomaneio && cliId) {
                         await db.ref(`${DB_ROOT}/radar_ativo/${veiculoDoRomaneio}/${cliId}`).remove();
                     }
@@ -1447,7 +1522,6 @@
 
         window.motoristaConfirmaEntrega = function(id, placa) { 
             if(confirm("Confirmar a entrega completa da NFe ao destino? A Base Logística será notificada.")) {
-                // Atualização com Autoria Exata
                 db.ref(`${DB_ROOT}/cargas/${id}`).update({
                     status: 'Entregue',
                     data_entrega: Date.now(),
@@ -1518,7 +1592,6 @@
                     }
                     btn.innerHTML = "<i class='bx bx-loader-alt bx-spin text-3xl'></i> ESCREVENDO NA BASE...";
                     
-                    // Ocorrência base usando currentDriverName para Linha do Tempo
                     await db.ref(`${DB_ROOT}/ocorrencias`).push({ veiculo: veiculoDoRomaneio || "Viatura Indeterminada", motorista: currentDriverName, tipo: document.getElementById('oco-tipo').value, valor: document.getElementById('oco-valor').value || 0, desc: document.getElementById('oco-desc').value, imgUrl: imgUrl, data: Date.now() });
                     alert("Operação confirmada. O Setor Financeiro já está com o seu relatório na tela.");
                     window.fecharModal('modal-ocorrencia'); e.target.reset();
