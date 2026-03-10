@@ -37,10 +37,13 @@
             70% { box-shadow: 0 0 0 30px rgba(220, 38, 38, 0); }
             100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
+
+        .nav-btn-active { background-color: #dc2626 !important; color: white !important; }
+        .nav-btn-ia-active { background-color: rgba(245, 158, 11, 0.2) !important; color: #f59e0b !important; border-color: #f59e0b !important; }
     </style>
 
     <script>
-        // Escudo global de proteção contra falhas de rede em iframes
+        // Escudo global contra falhas de rede em frames
         window.onerror = function(msg, url, lineNo, columnNo, error) {
             if (msg && msg.includes("Script error")) return true; 
             return false;
@@ -50,7 +53,7 @@
 <body class="text-slate-800 flex h-screen overflow-hidden">
 
     <!-- ================= 2. TELA DE LOGIN ================= -->
-    <div id="login-view" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 p-4">
+    <div id="login-view" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-4">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-8 border-red-600 relative overflow-hidden">
             <div class="w-24 h-24 mx-auto bg-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-xl border-b-4 border-red-600 transform -skew-x-6">
                 <span class="text-5xl font-black text-red-600 tracking-tighter">A</span>
@@ -62,11 +65,11 @@
             <form id="login-form" class="space-y-4 text-left">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">E-mail de Acesso</label>
-                    <input type="email" id="login-email" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                    <input type="email" id="login-email" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Senha</label>
-                    <input type="password" id="login-pass" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                    <input type="password" id="login-pass" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
                 </div>
                 <div class="pt-2">
                     <button type="submit" id="btn-login" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-lg transition-transform active:scale-95 flex justify-center items-center gap-2 uppercase tracking-tighter">
@@ -78,8 +81,9 @@
         </div>
     </div>
 
-    <!-- ================= 3. PAINEL GESTOR ================= -->
+    <!-- ================= 3. PAINEL GESTOR (ADMIN) ================= -->
     <div id="admin-view" class="hidden-view flex w-full h-full">
+        <!-- SIDEBAR -->
         <aside id="sidebar-menu" class="w-64 bg-slate-900 text-white flex flex-col transition-all duration-300 z-40 shadow-2xl flex-shrink-0 hidden sm:flex">
             <div class="p-6 flex items-center gap-3 border-b border-slate-800">
                 <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-black text-xl shadow-sm transform -skew-x-6 border-b-2 border-red-600">
@@ -94,6 +98,7 @@
                 <button onclick="nav('dashboard')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="dashboard">
                     <i class='bx bxs-dashboard text-xl'></i> <span class="font-semibold text-sm">Dashboard Central</span>
                 </button>
+                
                 <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-4 mb-2 px-3">Operação na Estrada</div>
                 <button onclick="nav('cargas')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="cargas">
                     <i class='bx bx-package text-xl'></i> <span class="font-semibold text-sm">Romaneios / Despachos</span>
@@ -107,6 +112,7 @@
                 <button onclick="nav('prospeccao')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 font-bold transition-colors border border-amber-500/30 mt-2" data-target="prospeccao">
                     <i class='bx bx-radar text-xl'></i> <span class="text-sm">Vendas no Percurso (IA)</span>
                 </button>
+
                 <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-4 mb-2 px-3">Base de Dados</div>
                 <button onclick="nav('clientes')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="clientes">
                     <i class='bx bxs-group text-xl'></i> <span class="font-semibold text-sm">Lojas & Clientes</span>
@@ -120,6 +126,7 @@
                 <button onclick="nav('oficina')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="oficina">
                     <i class='bx bx-wrench text-xl'></i> <span class="font-semibold text-sm">Oficina & Manutenção</span>
                 </button>
+
                 <div class="border-t border-slate-800 my-4"></div>
                 <button onclick="nav('config')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors" data-target="config">
                     <i class='bx bx-shield-quarter text-xl'></i> <span class="font-semibold text-sm">Configurações & Cofre</span>
@@ -132,6 +139,7 @@
             </div>
         </aside>
 
+        <!-- MAIN CONTENT -->
         <main class="flex-grow flex flex-col h-full overflow-hidden bg-slate-50 relative">
             <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10 border-b border-slate-200">
                 <div class="flex items-center gap-3">
@@ -148,7 +156,8 @@
             </header>
 
             <div class="flex-grow overflow-y-auto p-4 sm:p-6 relative">
-                <!-- Vistas Principais -->
+                
+                <!-- 1. DASHBOARD -->
                 <div id="view-dashboard" class="view-content space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div class="bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-blue-600"><p class="text-[10px] text-slate-500 font-bold uppercase">Entregas em Rota</p><h3 class="text-2xl font-black text-slate-800" id="dash-cargas">0</h3></div>
@@ -157,117 +166,368 @@
                         <div class="bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-purple-600"><p class="text-[10px] text-slate-500 font-bold uppercase">Clientes Base</p><h3 class="text-2xl font-black text-slate-800" id="dash-clientes">0</h3></div>
                         <div class="bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-slate-800"><p class="text-[10px] text-slate-500 font-bold uppercase">Frota</p><h3 class="text-2xl font-black text-slate-800" id="dash-frota">0</h3></div>
                     </div>
+                    <div class="bg-slate-900 rounded-2xl p-10 text-white relative overflow-hidden shadow-2xl">
+                        <div class="relative z-10">
+                            <h3 class="text-3xl font-black mb-2 uppercase italic tracking-tighter text-red-500">Logística de Elite AED</h3>
+                            <p class="text-slate-400 text-sm max-w-2xl leading-relaxed">Bem-vindo ao Command Center operacional. Aqui você cruza o monitoramento satelital em tempo real com a inteligência de prospecção comercial da sua própria base de clientes.</p>
+                        </div>
+                        <i class='bx bxs-ship absolute -right-10 -bottom-10 text-[250px] text-white/5'></i>
+                    </div>
                 </div>
 
+                <!-- 2. ROMANEIOS -->
                 <div id="view-cargas" class="view-content hidden-view space-y-4">
                     <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
-                        <h3 class="font-bold text-slate-800 uppercase tracking-tighter">Gestão de Romaneios</h3>
-                        <button onclick="abrirModalCarga()" class="bg-red-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase shadow-lg"><i class='bx bx-package'></i> Expedir Viagem</button>
+                        <h3 class="font-bold text-slate-800 uppercase tracking-tighter text-lg">Despachos & Romaneios</h3>
+                        <button onclick="abrirModalCarga()" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg transition hover:bg-red-700 active:scale-95 flex items-center gap-2">
+                            <i class='bx bx-package text-lg'></i> Expedir Viagem
+                        </button>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
-                        <table class="w-full text-left text-sm"><thead class="bg-slate-50 font-black text-[10px] uppercase border-b"><tr><th class="p-4">Status</th><th class="p-4">Viatura / Mot</th><th class="p-4">Destino</th><th class="p-4">NFe / Info</th><th class="p-4 text-center">Ações</th></tr></thead><tbody id="lista-cargas" class="divide-y divide-slate-100"></tbody></table>
+                        <table class="w-full text-left text-sm min-w-[900px]">
+                            <thead class="bg-slate-50 font-black text-[10px] uppercase border-b text-slate-400 tracking-widest">
+                                <tr>
+                                    <th class="p-4">Status / Data</th>
+                                    <th class="p-4">Alocação (Camião / Condutor)</th>
+                                    <th class="p-4">Ponto de Descarga</th>
+                                    <th class="p-4">NFe / Info Mercadoria</th>
+                                    <th class="p-4 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-cargas" class="divide-y divide-slate-100"></tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div id="view-ocorrencias" class="view-content hidden-view grid grid-cols-1 md:grid-cols-3 gap-4" id="lista-ocorrencias"></div>
+                <!-- 3. OCORRÊNCIAS / AUDITORIA -->
+                <div id="view-ocorrencias" class="view-content hidden-view space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 uppercase tracking-tighter text-lg">Auditoria Financeira de Estrada</h3>
+                    </div>
+                    <div id="lista-ocorrencias" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
 
+                <!-- 4. RASTREIO GPS -->
                 <div id="view-rastreio" class="view-content hidden-view h-full flex flex-col min-h-[500px]">
-                    <div id="map-rastreio" class="w-full h-full rounded-lg"></div>
-                    <div id="map-rastreio-overlay" class="absolute inset-0 bg-slate-50/90 z-20 flex flex-col items-center justify-center">
-                        <i class='bx bx-broadcast text-5xl text-slate-300 mb-2'></i>
-                        <p class="text-slate-500 font-bold uppercase text-xs">Aguardando APIs Google</p>
+                    <div class="bg-slate-900 p-3 rounded-t-xl text-white font-bold flex justify-between items-center text-[10px] uppercase tracking-widest border-b border-slate-800">
+                        <span><i class='bx bx-broadcast text-red-500'></i> Monitoramento Satelital da Frota</span>
+                    </div>
+                    <div class="flex-grow bg-white border-x border-b border-slate-300 rounded-b-xl relative p-1 overflow-hidden">
+                        <div id="map-rastreio" class="w-full h-full rounded-lg"></div>
+                        <div id="map-rastreio-overlay" class="absolute inset-0 bg-slate-50/95 z-20 flex flex-col items-center justify-center">
+                            <i class='bx bx-map-alt text-6xl text-slate-300 mb-2 animate-pulse'></i>
+                            <p class="text-slate-500 font-bold uppercase text-xs tracking-widest">Aguardando Conexão Google Maps</p>
+                        </div>
                     </div>
                 </div>
 
+                <!-- 5. RADAR IA -->
                 <div id="view-prospeccao" class="view-content hidden-view h-full flex flex-col gap-4 min-h-[600px]">
                     <div class="flex flex-col lg:flex-row gap-4 h-full">
-                        <div class="w-full lg:w-7/12 flex flex-col gap-4 h-full">
+                        <div class="w-full lg:w-7/12 flex flex-col gap-4">
                             <div class="bg-white p-6 rounded-xl shadow-sm border border-t-4 border-t-amber-500">
-                                <h3 class="font-black text-slate-800 mb-2 uppercase text-sm tracking-tight"><i class='bx bx-radar text-amber-500'></i> Radar de Clientes em Rota</h3>
-                                <p class="text-[10px] text-slate-500 mb-4 font-medium">O sistema mapeia as NFes ativas do veículo e detecta clientes próximos da estrada.</p>
-                                <div class="bg-slate-50 p-3 rounded-lg border mb-3">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase mb-1 block">Veículo em Missão</label>
-                                    <select id="radar-veiculo" class="w-full p-2.5 border rounded-lg text-sm font-black" onchange="preencherRotaVeiculo()"><option value="">-- Selecione o Veículo --</option></select>
+                                <h3 class="font-black text-slate-800 mb-2 uppercase text-sm tracking-tight"><i class='bx bx-radar text-amber-500 text-xl'></i> Radar Inteligente de Clientes AED</h3>
+                                <p class="text-[10px] text-slate-500 mb-4 font-medium uppercase">Detecte clientes base no trajeto real das entregas para otimizar fretes.</p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-3">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase mb-1.5 block">Viatura Logística em Operação</label>
+                                    <select id="radar-veiculo" class="w-full p-3 border rounded-lg text-sm font-black focus:ring-2 focus:ring-amber-500 outline-none bg-white transition" onchange="preencherRotaVeiculo()">
+                                        <option value="">-- Selecione o Caminhão Ativo --</option>
+                                    </select>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3 mb-4">
-                                    <input type="text" id="origem-rota" placeholder="GPS Origem..." class="w-full p-2.5 border rounded-lg text-sm font-bold bg-slate-50">
-                                    <input type="text" id="destino-rota" placeholder="Último Destino..." class="w-full p-2.5 border rounded-lg text-sm font-bold bg-slate-50">
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1 block pl-1">Origem (GPS / Satélite)</label>
+                                        <input type="text" id="origem-rota" placeholder="Localização atual..." class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50 outline-none focus:ring-1 focus:ring-amber-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1 block pl-1">Destino Final (Despacho)</label>
+                                        <input type="text" id="destino-rota" placeholder="Último destino da NFe..." class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50 outline-none focus:ring-1 focus:ring-amber-500">
+                                    </div>
                                 </div>
-                                <button onclick="analisarRotaClientesBase()" id="btn-analisar-rota" class="w-full bg-slate-900 hover:bg-black transition text-amber-400 px-4 py-3.5 rounded-xl font-black uppercase text-xs shadow-xl flex justify-center items-center gap-2">
+                                <button onclick="analisarRotaClientesBase()" id="btn-analisar-rota" class="w-full bg-slate-900 hover:bg-black transition text-amber-400 px-4 py-4 rounded-xl font-black uppercase text-xs shadow-xl flex justify-center items-center gap-2 tracking-widest active:scale-95">
                                     <i class='bx bx-map-alt text-xl'></i> Iniciar Mapeamento Geo-Referenciado
                                 </button>
                             </div>
-                            <div class="bg-slate-200 p-1 rounded-xl border flex-grow relative min-h-[300px]">
-                                <div id="map-rota" class="w-full h-full rounded-lg shadow-inner"></div>
-                                <div id="map-rota-overlay" class="absolute inset-0 bg-slate-50/90 z-20 flex flex-col items-center justify-center"><i class='bx bx-trip text-5xl text-slate-300'></i></div>
+                            <div class="bg-slate-200 p-1 rounded-xl border flex-grow relative min-h-[350px] shadow-inner">
+                                <div id="map-rota" class="w-full h-full rounded-lg"></div>
+                                <div id="map-rota-overlay" class="absolute inset-0 bg-slate-50/90 z-20 flex flex-col items-center justify-center">
+                                    <i class='bx bx-trip text-6xl text-slate-300 mb-2'></i>
+                                    <p class="text-slate-400 font-black uppercase text-[10px]">Radar em Standby</p>
+                                </div>
                             </div>
                         </div>
                         <div class="w-full lg:w-5/12 bg-white rounded-xl shadow-sm border flex flex-col h-full overflow-hidden">
-                            <div class="p-4 bg-slate-900 text-white flex justify-between items-center border-b-4 border-amber-500">
-                                <h3 class="font-black uppercase text-xs">Clientes Base no Percurso</h3>
-                                <span id="badge-places" class="bg-amber-500 text-slate-900 text-[10px] font-black px-2 rounded-full hidden">0</span>
+                            <div class="p-4 bg-slate-900 text-white flex justify-between items-center border-b-4 border-amber-500 shadow-lg flex-shrink-0">
+                                <h3 class="font-black uppercase text-xs tracking-widest flex items-center gap-2"><i class='bx bxs-user-check text-amber-500 text-lg'></i> Clientes em Rota</h3>
+                                <span id="badge-places" class="bg-amber-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full hidden">0</span>
                             </div>
-                            <div id="lista-prospeccao" class="p-4 flex-grow overflow-y-auto space-y-4 bg-slate-50"></div>
+                            <div id="lista-prospeccao" class="p-4 flex-grow overflow-y-auto space-y-4 bg-slate-50">
+                                <div class="text-center py-24 text-slate-400 flex flex-col items-center opacity-40">
+                                    <i class='bx bx-scan text-6xl mb-3'></i>
+                                    <p class="text-[10px] font-black uppercase tracking-widest leading-relaxed">Selecione uma viatura para<br>cruzar os dados da estrada</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- 6. CLIENTES -->
                 <div id="view-clientes" class="view-content hidden-view space-y-4">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center"><h3 class="font-bold uppercase tracking-tighter">Lojas da Base</h3><button onclick="abrirModal('modal-cliente')" class="bg-red-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase shadow-lg"><i class='bx bx-plus'></i> Nova Loja</button></div>
-                    <table class="w-full text-left text-sm bg-white rounded-xl shadow-sm overflow-hidden"><thead class="bg-slate-50 font-black text-[10px] uppercase border-b"><tr><th class="p-4">Nome</th><th class="p-4">Contato</th><th class="p-4">Cidade</th><th class="p-4 text-center">Ações</th></tr></thead><tbody id="lista-clientes" class="divide-y divide-slate-100"></tbody></table>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                        <h3 class="font-bold uppercase tracking-tighter text-lg">Base de Dados de Lojas</h3>
+                        <button onclick="abrirModal('modal-cliente')" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-red-700 transition active:scale-95">
+                            <i class='bx bx-plus text-lg'></i> Adicionar Loja Manual
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 font-black text-[10px] uppercase border-b text-slate-400 tracking-widest">
+                                <tr>
+                                    <th class="p-4">Identificação Comercial</th>
+                                    <th class="p-4">Contacto / WhatsApp</th>
+                                    <th class="p-4">Região / Cidade</th>
+                                    <th class="p-4 text-center">Gestão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-clientes" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div id="view-frota" class="view-content hidden-view grid grid-cols-1 md:grid-cols-3 gap-4" id="lista-frota"></div>
-                
+                <!-- 7. EQUIPE -->
+                <div id="view-equipe" class="view-content hidden-view space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                        <h3 class="font-bold uppercase tracking-tighter text-lg">Gestão de Equipa & RH</h3>
+                        <button onclick="abrirModal('modal-equipe')" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-black transition active:scale-95">
+                            <i class='bx bxs-user-plus text-lg'></i> Admitir Colaborador
+                        </button>
+                    </div>
+                    <div id="lista-equipe" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- 8. FROTA -->
+                <div id="view-frota" class="view-content hidden-view space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                        <h3 class="font-bold uppercase tracking-tighter text-lg">Parque de Viaturas Operacionais</h3>
+                        <button onclick="abrirModal('modal-frota')" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-red-700 active:scale-95">
+                            <i class='bx bxs-truck text-lg'></i> Registar Veículo
+                        </button>
+                    </div>
+                    <div id="lista-frota" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- 9. OFICINA -->
                 <div id="view-oficina" class="view-content hidden-view space-y-4">
-                    <table class="w-full text-left text-sm bg-white rounded-xl shadow-sm overflow-hidden"><thead class="bg-slate-50 font-black text-[10px] uppercase border-b"><tr><th class="p-4">Data</th><th class="p-4">Viatura</th><th class="p-4">Descrição</th><th class="p-4 text-right">Valor</th><th class="p-4 text-center">Ações</th></tr></thead><tbody id="lista-oficina" class="divide-y divide-slate-100"></tbody></table>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                        <h3 class="font-bold uppercase tracking-tighter text-lg">Manutenção & Saúde de Frota</h3>
+                        <button onclick="abrirModalManutencao()" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-black active:scale-95">
+                            <i class='bx bx-wrench text-lg'></i> Lançar Manutenção
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 font-black text-[10px] uppercase border-b text-slate-400 tracking-widest">
+                                <tr>
+                                    <th class="p-4">Data / Categoria</th>
+                                    <th class="p-4">Viatura</th>
+                                    <th class="p-4">Relatório de Reparo</th>
+                                    <th class="p-4 text-right">Custo R$</th>
+                                    <th class="p-4 text-center">Gestão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-oficina" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div id="view-config" class="view-content hidden-view max-w-2xl bg-white p-8 rounded-xl shadow-sm border border-t-4 border-t-purple-500">
-                    <h3 class="text-xl font-black text-slate-800 mb-6 uppercase tracking-tighter">Cofre de APIs</h3>
-                    <div class="space-y-4">
-                        <input type="password" id="gemini-key" placeholder="Gemini API Key" class="w-full p-3 border rounded-lg text-sm">
-                        <input type="password" id="maps-key" placeholder="Google Maps Key" class="w-full p-3 border rounded-lg text-sm">
-                        <div class="grid grid-cols-2 gap-4"><input type="text" id="cloud-name" placeholder="Cloud Name" class="w-full p-3 border rounded-lg text-sm"><input type="password" id="upload-preset" placeholder="Upload Preset" class="w-full p-3 border rounded-lg text-sm"></div>
-                        <button onclick="salvarConfig()" class="w-full bg-slate-900 text-white p-4 rounded-xl font-black uppercase text-xs shadow-xl">Salvar Integrações</button>
+                <!-- 10. CONFIGURAÇÕES -->
+                <div id="view-config" class="view-content hidden-view max-w-2xl">
+                    <div class="bg-white p-10 rounded-2xl shadow-xl border-t-4 border-t-purple-600">
+                        <h3 class="text-xl font-black text-slate-800 mb-8 uppercase tracking-tighter flex items-center gap-2"><i class='bx bx-shield-quarter text-amber-500'></i> Cofre de APIs e Segurança</h3>
+                        <div class="space-y-6">
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Cérebro IA (Google Gemini)</label>
+                                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full p-3 border rounded-lg font-mono text-sm outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Satélite & Mapas (Google Maps SDK)</label>
+                                <input type="password" id="maps-key" placeholder="AIzaSy..." class="w-full p-3 border rounded-lg font-mono text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Arquivos em Nuvem (Cloudinary)</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" id="cloud-name" placeholder="Cloud Name" class="w-full p-3 border rounded-lg text-sm bg-white outline-none">
+                                    <input type="password" id="upload-preset" placeholder="Upload Preset" class="w-full p-3 border rounded-lg text-sm bg-white outline-none">
+                                </div>
+                                <div class="mt-3 flex items-center justify-between px-1">
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Consumo Financeiro:</span>
+                                    <span id="cloud-bytes-display" class="text-[9px] font-black text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100 uppercase tracking-widest">0.00 MB</span>
+                                </div>
+                            </div>
+                            <button onclick="salvarConfiguracoes()" class="w-full bg-slate-900 hover:bg-black text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl transition active:scale-95 flex justify-center items-center gap-2">
+                                <i class='bx bx-lock-alt text-lg'></i> Criptografar e Salvar no Banco
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- ================= 4. APP MOBILE MOTORISTA ================= -->
+    <!-- ================= 4. APP MOTORISTA (MOBILE) ================= -->
     <div id="motorista-view" class="hidden-view h-full flex flex-col bg-slate-900 text-white absolute inset-0 z-[60] overflow-y-auto">
-        <div class="p-6 flex justify-between items-center border-b border-slate-800 bg-slate-950">
-            <div><h2 class="font-black text-2xl text-red-600 tracking-tighter">AED LOG</h2><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Motorista: <span id="mot-nome-display">...</span></p></div>
-            <button onclick="fazerLogout()" class="bg-slate-800 p-2 rounded-lg"><i class='bx bx-log-out text-xl'></i></button>
+        <div class="p-6 flex justify-between items-center border-b border-slate-800 bg-slate-950 flex-shrink-0">
+            <div>
+                <h2 class="font-black text-2xl text-red-600 tracking-tighter italic">AED LOG</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Motorista: <span id="mot-nome-display" class="text-white">...</span></p>
+            </div>
+            <button onclick="fazerLogout()" class="bg-slate-800 p-2.5 rounded-lg border border-slate-700 active:scale-90 transition">
+                <i class='bx bx-log-out text-xl'></i>
+            </button>
         </div>
+        
         <div class="flex-grow p-6 flex flex-col items-center pb-24">
-            <div id="status-escala" class="w-full max-w-sm mb-6 text-center bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl"></div>
+            <div id="status-escala" class="w-full max-w-sm mb-6 text-center bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center">
+                <i class='bx bx-loader-alt bx-spin text-4xl text-amber-500 mb-3'></i>
+                <p class="text-xs text-slate-400 font-black uppercase tracking-widest">Procurando Romaneios...</p>
+            </div>
+
             <div class="relative w-56 h-56 flex items-center justify-center mb-8">
                 <div id="gps-pulse" class="absolute inset-0 rounded-full bg-red-600 hidden"></div>
-                <button id="btn-toggle-gps" onclick="toggleGPS()" class="w-48 h-48 bg-slate-800 border-4 border-slate-700 rounded-full flex flex-col items-center justify-center shadow-2xl relative z-10" disabled>
+                <button id="btn-toggle-gps" onclick="toggleGPS()" class="w-48 h-48 bg-slate-800 border-4 border-slate-700 rounded-full flex flex-col items-center justify-center shadow-2xl relative z-10 active:scale-95 disabled:opacity-40" disabled>
                     <i id="gps-icon" class='bx bx-navigation text-6xl text-slate-500 mb-2'></i>
-                    <span id="gps-text" class="font-black text-slate-500 uppercase text-[10px] text-center px-4 leading-tight">SISTEMA<br>BLOQUEADO</span>
+                    <span id="gps-text" class="font-black text-slate-500 uppercase text-[10px] text-center px-4 leading-tight tracking-widest">SEM CARGA<br>AUTORIZADA</span>
                 </button>
             </div>
-            <div id="motorista-cargas-container" class="w-full max-w-sm hidden">
-                <div id="motorista-lista-cargas" class="space-y-4 mb-8"></div>
-                <button onclick="abrirModalOcorrencia()" class="w-full bg-slate-800 border border-slate-600 text-white font-black py-5 rounded-2xl shadow-lg flex justify-center items-center gap-3"><i class='bx bx-receipt text-3xl text-amber-500'></i> <span class="text-xs font-black uppercase">Reportar Gasto / Avaria</span></button>
+            
+            <p id="gps-status-msg" class="text-xs text-slate-500 text-center font-bold uppercase mb-8 px-6"></p>
+
+            <div id="motorista-cargas-container" class="w-full max-w-sm hidden space-y-4">
+                <div id="motorista-lista-cargas"></div>
+                <button onclick="abrirModalOcorrencia()" class="w-full bg-slate-800 border border-slate-700 text-white font-black py-5 rounded-2xl shadow-xl flex justify-center items-center gap-3 active:scale-95 transition">
+                    <i class='bx bx-receipt text-3xl text-amber-500'></i> 
+                    <div class="text-left">
+                        <span class="block text-xs font-black uppercase tracking-widest">Lançar Custo/Avaria</span>
+                        <span class="block text-[8px] text-slate-400 font-normal">Diesel, Pedágio ou Oficina</span>
+                    </div>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- ================= 5. MODAIS GERAIS ================= -->
-    <div id="modal-equipe" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] p-4"><div class="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl"><h3 class="font-black uppercase mb-4">Novo Acesso</h3><form id="form-equipe" class="space-y-3"><input type="text" id="eq-nome" placeholder="Nome" class="w-full p-3 border rounded-lg"><select id="eq-cargo" class="w-full p-3 border rounded-lg font-bold"><option value="motorista">Motorista</option><option value="montador">Montador</option></select><input type="email" id="eq-email" placeholder="E-mail" class="w-full p-3 border rounded-lg"><input type="password" id="eq-senha" placeholder="Senha" class="w-full p-3 border rounded-lg"><button type="submit" id="btn-salvar-equipe" class="w-full bg-slate-900 text-white p-3 rounded-lg font-black uppercase text-xs">Salvar</button><button type="button" onclick="fecharModal('modal-equipe')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-2">Cancelar</button></form></div></div>
-    <div id="modal-cliente" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] p-4"><div class="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl"><h3 class="font-black uppercase mb-4">Nova Loja</h3><form id="form-cliente" class="space-y-3"><input type="text" id="cli-nome" placeholder="Nome" class="w-full p-3 border rounded-lg"><div class="flex gap-2"><input type="text" id="cli-tel" placeholder="WhatsApp" class="w-1/2 p-3 border rounded-lg"><input type="text" id="cli-cidade" placeholder="Cidade (UF)" class="w-1/2 p-3 border rounded-lg"></div><input type="text" id="cli-end" placeholder="Endereço Geocodificável" class="w-full p-3 border rounded-lg"><button type="submit" class="w-full bg-red-600 text-white p-3 rounded-lg font-black uppercase text-xs">Salvar</button><button type="button" onclick="fecharModal('modal-cliente')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-2">Cancelar</button></form></div></div>
-    <div id="modal-frota" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] p-4"><div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl"><h3 class="font-black uppercase mb-4">Veículo</h3><form id="form-frota" class="space-y-3"><input type="text" id="fr-placa" placeholder="Placa" class="w-full p-3 border rounded-lg uppercase"><input type="text" id="fr-modelo" placeholder="Modelo" class="w-full p-3 border rounded-lg"><button type="submit" class="w-full bg-red-600 text-white p-3 rounded-lg font-black uppercase text-xs">Salvar</button><button type="button" onclick="fecharModal('modal-frota')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-2">Cancelar</button></form></div></div>
-    <div id="modal-ocorrencia" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[100] p-4"><div class="bg-slate-800 rounded-xl w-full max-w-sm p-6 text-white shadow-2xl"><h3 class="font-black uppercase mb-4">Evento de Estrada</h3><form id="form-ocorrencia" class="space-y-4"><select id="oco-tipo" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700"><option value="Pedágio">Pedágio</option><option value="Diesel">Combustível</option><option value="Mecânica">Avaria / Pneu</option></select><input type="number" step="0.01" id="oco-valor" placeholder="Valor R$" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-amber-500 font-black text-xl"><input type="file" id="oco-foto" accept="image/*" capture="environment" class="w-full text-xs text-slate-400"><textarea id="oco-desc" placeholder="Detalhes..." class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-sm resize-none"></textarea><button type="submit" id="btn-salvar-ocorrencia" class="w-full bg-amber-600 text-slate-900 p-4 rounded-xl font-black uppercase text-xs">Enviar</button><button type="button" onclick="fecharModal('modal-ocorrencia')" class="w-full text-slate-500 text-[10px] font-black uppercase mt-2">Fechar</button></form></div></div>
-    <div id="modal-carga" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] p-4"><div class="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl"><h3 class="font-black uppercase mb-4">Romaneio de Saída</h3><form id="form-carga" class="space-y-4"><div class="grid grid-cols-2 gap-4"><select id="carga-veiculo" class="w-full p-3 border rounded-lg font-bold"></select><select id="carga-motorista" class="w-full p-3 border rounded-lg font-bold"></select></div><select id="carga-cliente" class="w-full p-3 border rounded-lg"></select><input type="text" id="carga-nfe" placeholder="NFe" class="w-full p-3 border rounded-lg font-mono"><textarea id="carga-desc" placeholder="Resumo..." class="w-full p-3 border rounded-lg resize-none"></textarea><button type="submit" class="w-full bg-red-600 text-white p-4 rounded-xl font-black uppercase text-xs shadow-xl">Autorizar Saída</button><button type="button" onclick="fecharModal('modal-carga')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-2">Cancelar</button></form></div></div>
-    <div id="modal-ia" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[200] p-4"><div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden"><div class="bg-slate-900 p-5 text-white flex justify-between items-center border-b-4 border-amber-500"><h3 class="font-black uppercase text-xs tracking-widest"><i class='bx bx-brain text-amber-500'></i> Pitch de Venda IA</h3><button onclick="fecharModal('modal-ia')" class="text-white"><i class='bx bx-x text-3xl'></i></button></div><div class="p-6"><div class="bg-amber-50 p-4 rounded-xl mb-4 border border-amber-200"><p id="ia-store-name" class="font-black text-slate-800 uppercase text-xs mb-1">...</p><p id="ia-store-address" class="text-[10px] text-slate-500 mb-3">...</p><input type="text" id="ia-store-phone" placeholder="WhatsApp" class="w-full p-2 border rounded-lg text-xs font-bold"></div><select id="ia-contexto" class="w-full p-3 mb-4 border rounded-xl text-xs font-bold" onchange="gerarTextoIA()"><option value="frete_gratis">LOGÍSTICA: Aproveitar Rota (100% Isenção Frete)</option><option value="revisao">MANUTENÇÃO: Peças / Assistência</option></select><div class="relative"><textarea id="ia-texto" class="w-full h-44 p-4 border rounded-xl text-xs resize-none leading-relaxed text-slate-700 bg-slate-50 outline-none"></textarea><div id="ia-loading" class="absolute inset-0 bg-white/95 z-10 flex flex-col items-center justify-center hidden rounded-xl"><div class="loader mb-3 !border-t-amber-500"></div><p class="text-[10px] font-black text-amber-600 animate-pulse uppercase">Redigindo...</p></div></div><div class="mt-5 flex gap-3"><button onclick="gerarTextoIA()" class="flex-1 border py-3 text-[10px] font-black uppercase rounded-xl">Recriar</button><button onclick="enviarWpp()" class="flex-[2] bg-green-600 text-white py-3 text-[10px] font-black uppercase rounded-xl shadow-lg">Enviar WhatsApp</button></div></div></div></div>
+    <!-- ================= 5. MODAIS (ESTRUTURA DE FORMS) ================= -->
+    
+    <!-- Modal Oficina -->
+    <div id="modal-manutencao" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-black text-slate-800 uppercase text-sm tracking-tight flex items-center gap-2"><i class='bx bx-wrench'></i> Ordem de Serviço</h3>
+                <button onclick="fecharModal('modal-manutencao')" class="text-slate-400 hover:text-red-500"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <form id="form-manutencao" class="p-6 space-y-4">
+                <select id="man-veiculo" required class="w-full p-3 border rounded-lg bg-white text-sm font-black"></select>
+                <select id="man-tipo" required class="w-full p-3 border rounded-lg text-sm bg-white font-bold">
+                    <option value="Troca de Óleo / Filtros">Óleo / Filtros</option>
+                    <option value="Troca de Pneus / Alinhamento">Substituição de Pneus</option>
+                    <option value="Mecânica Geral">Mecânica Geral</option>
+                    <option value="Funilaria">Funilaria / Pintura</option>
+                </select>
+                <input type="number" step="0.01" id="man-valor" placeholder="Valor do Custo R$" required class="w-full p-3 border rounded-lg text-sm font-black text-red-600">
+                <textarea id="man-desc" placeholder="O que foi feito no veículo?" rows="3" required class="w-full p-3 border rounded-lg text-sm resize-none"></textarea>
+                <button type="submit" class="w-full bg-slate-900 text-white p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Salvar Manutenção</button>
+            </form>
+        </div>
+    </div>
 
-    <!-- ================= 6. JAVASCRIPT ================= -->
+    <!-- Modal Equipa -->
+    <div id="modal-equipe" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-black text-slate-800 uppercase text-sm tracking-tight"><i class='bx bxs-user-badge text-red-600'></i> Admitir Colaborador</h3>
+                <button onclick="fecharModal('modal-equipe')" class="text-slate-400 hover:text-red-500"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <form id="form-equipe" class="p-6 space-y-3">
+                <input type="text" id="eq-nome" placeholder="Nome Completo" required class="w-full p-3 border rounded-lg text-sm font-bold">
+                <select id="eq-cargo" class="w-full p-3 border rounded-lg font-black text-xs uppercase bg-white">
+                    <option value="motorista">Motorista da Frota</option>
+                    <option value="montador">Montador Externo</option>
+                </select>
+                <input type="text" id="eq-cnh" placeholder="CNH / Registro Profissional" class="w-full p-3 border rounded-lg text-sm">
+                <div class="border-t pt-4 mt-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Credenciais Mobile</label>
+                    <input type="email" id="eq-email" placeholder="E-mail Corporativo" required class="w-full p-3 border rounded-lg text-sm mb-2">
+                    <input type="password" id="eq-senha" placeholder="Senha (Mín. 6 chars)" required minlength="6" class="w-full p-3 border rounded-lg text-sm">
+                </div>
+                <button type="submit" id="btn-salvar-equipe" class="w-full bg-slate-900 text-white p-4 rounded-xl font-black uppercase text-xs shadow-xl mt-4 active:scale-95">Gerar Acesso no Banco</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Romaneio -->
+    <div id="modal-carga" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[110] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-black text-slate-800 uppercase text-sm tracking-tight flex items-center gap-2"><i class='bx bx-rocket text-red-600'></i> Novo Despacho Logístico</h3>
+                <button onclick="fecharModal('modal-carga')" class="text-slate-400 hover:text-red-500"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <form id="form-carga" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <select id="carga-veiculo" required class="w-full p-3 border rounded-lg bg-white text-sm font-black"></select>
+                    <select id="carga-motorista" required class="w-full p-3 border rounded-lg bg-white text-sm font-black"></select>
+                </div>
+                <select id="carga-cliente" required class="w-full p-3 border rounded-lg bg-white text-sm font-bold"></select>
+                <input type="text" id="carga-nfe" placeholder="Nº da NFe" required class="w-full p-3 border rounded-lg text-sm font-black uppercase tracking-widest font-mono">
+                <textarea id="carga-desc" placeholder="Resumo da Carga..." rows="3" required class="w-full p-3 border rounded-lg text-sm resize-none"></textarea>
+                <button type="submit" class="w-full bg-red-600 text-white p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Autorizar Saída</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal IA -->
+    <div id="modal-ia" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
+            <div class="bg-slate-900 p-5 text-white flex justify-between items-center border-b-4 border-amber-500">
+                <h3 class="font-black uppercase text-xs tracking-widest flex items-center gap-2"><i class='bx bx-brain text-amber-500'></i> Pitch de Venda IA (Cliente Base)</h3>
+                <button onclick="fecharModal('modal-ia')" class="text-slate-400 hover:text-white transition"><i class='bx bx-x text-3xl'></i></button>
+            </div>
+            <div class="p-6">
+                <div class="bg-amber-50 p-5 rounded-xl mb-4 border border-amber-200 flex items-start gap-4 shadow-inner">
+                    <i class='bx bxs-store text-4xl text-amber-600 mt-1'></i>
+                    <div class="w-full">
+                        <p id="ia-store-name" class="font-black text-slate-800 uppercase text-sm mb-1 leading-none">...</p>
+                        <p id="ia-store-address" class="text-[10px] text-slate-500 font-bold uppercase mb-3">...</p>
+                        <input type="text" id="ia-store-phone" placeholder="WhatsApp" class="w-full p-2 border border-amber-200 rounded-lg text-xs font-black bg-white focus:ring-1 focus:ring-amber-500 outline-none">
+                    </div>
+                </div>
+                <select id="ia-contexto" class="w-full p-3 mb-4 border rounded-xl text-xs font-black uppercase bg-slate-50 tracking-widest" onchange="gerarTextoIA()">
+                    <option value="frete_gratis">LOGÍSTICA: Aproveitar Rota (100% Isenção de Frete)</option>
+                    <option value="manutencao">MANUTENÇÃO: Técnico na região (Revisão Preventiva)</option>
+                </select>
+                <div class="relative">
+                    <textarea id="ia-texto" class="w-full h-48 p-4 border rounded-xl text-sm resize-none leading-relaxed text-slate-700 bg-slate-50 shadow-inner outline-none focus:ring-1 focus:ring-amber-500"></textarea>
+                    <div id="ia-loading" class="absolute inset-0 bg-white/95 z-10 flex flex-col items-center justify-center hidden rounded-xl">
+                        <div class="loader mb-3 !border-t-amber-500 border-4"></div>
+                        <p class="text-[10px] font-black text-amber-600 animate-pulse uppercase tracking-widest">O Cérebro IA está redigindo...</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button onclick="gerarTextoIA()" class="flex-1 border-2 border-slate-100 hover:border-slate-200 py-3 text-[10px] font-black uppercase rounded-xl transition active:scale-95">Recriar</button>
+                    <button onclick="enviarWpp()" class="flex-[2] bg-green-600 hover:bg-green-700 text-white py-3 text-[10px] font-black uppercase rounded-xl shadow-lg transition active:scale-95 flex justify-center items-center gap-2">
+                        <i class='bx bxl-whatsapp text-xl'></i> Enviar WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais Genéricos -->
+    <div id="modal-cliente" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[110] p-4"><div class="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl"><h3 class="font-black uppercase mb-4 text-sm">Nova Loja na Base</h3><form id="form-cliente" class="space-y-3"><input type="text" id="cli-nome" placeholder="Nome da Loja" required class="w-full p-3 border rounded-lg text-sm"><div class="flex gap-2"><input type="text" id="cli-tel" placeholder="WhatsApp" required class="w-1/2 p-3 border rounded-lg text-sm"><input type="text" id="cli-cidade" placeholder="Cidade (UF)" required class="w-1/2 p-3 border rounded-lg text-sm"></div><input type="text" id="cli-end" placeholder="Endereço Geocodificável" required class="w-full p-3 border rounded-lg text-sm"><button type="submit" class="w-full bg-red-600 text-white p-3.5 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Salvar</button><button type="button" onclick="fecharModal('modal-cliente')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-2">Cancelar</button></form></div></div>
+    <div id="modal-frota" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[110] p-4"><div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl"><h3 class="font-black uppercase mb-4 text-sm">Novo Veículo</h3><form id="form-frota" class="space-y-3"><input type="text" id="fr-placa" placeholder="Placa Mercosul" required class="w-full p-3 border rounded-lg uppercase font-black tracking-widest"><input type="text" id="fr-modelo" placeholder="Modelo do Veículo" required class="w-full p-3 border rounded-lg text-sm"><select id="fr-status" class="w-full p-3 border rounded-lg text-xs font-black uppercase bg-white"><option value="Disponível">Disponível</option><option value="Manutenção">Em Oficina</option></select><button type="submit" class="w-full bg-red-600 text-white p-3.5 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Registar</button><button type="button" onclick="fecharModal('modal-frota')" class="w-full text-slate-400 text-[10px] font-black uppercase mt-2">Cancelar</button></form></div></div>
+    <div id="modal-ocorrencia" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[110] p-4"><div class="bg-slate-800 rounded-2xl w-full max-w-sm p-6 text-white shadow-2xl border border-slate-700"><h3 class="font-black uppercase mb-5 text-sm tracking-widest flex items-center gap-2"><i class='bx bx-receipt text-amber-500'></i> Reportar Evento</h3><form id="form-ocorrencia" class="space-y-4"><select id="oco-tipo" class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 font-bold text-sm"><option value="Pedágio">Portagem / Pedágio</option><option value="Diesel">Diesel / Arla</option><option value="Oficina">Reparo de Emergência</option><option value="Almoço">Refeição / Pernoite</option></select><input type="number" step="0.01" id="oco-valor" placeholder="Custo R$" class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-500 font-black text-2xl text-center"><input type="file" id="oco-foto" accept="image/*" capture="environment" class="w-full text-[10px] text-slate-400 border border-slate-700 p-2 rounded-xl"><textarea id="oco-desc" placeholder="Detalhes do ocorrido..." required class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-sm resize-none"></textarea><button type="submit" id="btn-salvar-ocorrencia" class="w-full bg-amber-600 text-slate-900 p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95">Concluir Envio</button><button type="button" onclick="fecharModal('modal-ocorrencia')" class="w-full text-slate-500 text-[10px] font-black uppercase mt-3">Descartar</button></form></div></div>
+
+    <!-- ================= 6. JAVASCRIPT INTEGRAL (SISTEMA INTEGRADO) ================= -->
     <script>
+        // --- 1. CONFIGURAÇÃO FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyAuqKgLVpDYqdTxKKnFO6Ns6rptM8YKqn0",
             authDomain: "aed-log.firebaseapp.com",
@@ -282,20 +542,30 @@
         const auth = firebase.auth();
         const DB_ROOT = 'aed_data_empresa';
 
-        let currentUser = null;
+        // Fix Admin Auth (Secondary App)
+        let secondaryApp;
+        try { secondaryApp = firebase.app("SecondaryApp"); } catch (e) { secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp"); }
+        const secondaryAuth = secondaryApp.auth();
+
+        // Variáveis de Controle
+        let currentUser = null; 
         let GEMINI_API_KEY = ""; let GOOGLE_MAPS_KEY = "";
-        let CLOUDINARY_CLOUD_NAME = ""; let CLOUDINARY_UPLOAD_PRESET = "";
+        let CLOUDINARY_CLOUD_NAME = ""; let CLOUDINARY_UPLOAD_PRESET = ""; let CLOUDINARY_BYTES_USED = 0;
         let mapsLoaded = false; let directionsService = null; let directionsRenderer = null;
         let mapRastreioObj = null, mapRotaObj = null;
-        let routeMarkers = []; let vehicleMarkers = {}; let activePlaceDetails = null;
+        let vehicleMarkers = {}; let routeMarkers = []; let activePlaceDetails = null;
 
+        // --- 2. NAVEGAÇÃO E AUTH ---
         function nav(target) {
             const btns = document.querySelectorAll('.nav-btn');
             btns.forEach(btn => {
-                btn.classList.remove('bg-red-600', 'text-white', 'bg-amber-500/20', 'text-amber-500');
-                if(btn.dataset.target === target) btn.classList.add(target === 'prospeccao' ? 'bg-amber-500/20' : 'bg-red-600', target === 'prospeccao' ? 'text-amber-500' : 'text-white');
-                else btn.classList.add('text-slate-300');
+                btn.classList.remove('nav-btn-active', 'nav-btn-ia-active');
+                if(btn.dataset.target === target) {
+                    if(target === 'prospeccao') btn.classList.add('nav-btn-ia-active');
+                    else btn.classList.add('nav-btn-active');
+                }
             });
+
             document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden-view'));
             const targetView = document.getElementById(`view-${target}`);
             if(targetView) {
@@ -303,6 +573,7 @@
                 const title = document.getElementById('page-title');
                 if(title) title.innerText = target.toUpperCase();
             }
+
             if(target === 'rastreio') checkMap('rastreio');
             if(target === 'prospeccao') { checkMap('rota'); popularSelectVeiculosRadar(); }
         }
@@ -310,22 +581,17 @@
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
-                const loginV = document.getElementById('login-view');
-                if(loginV) loginV.classList.add('hidden-view');
-                carregarConfig();
+                document.getElementById('login-view').classList.add('hidden-view');
+                carregarConfiguracoesEmpresa();
                 const snap = await db.ref(`users_roles/${user.uid}`).once('value');
                 const role = snap.exists() ? snap.val().role : 'motorista';
-                if(role === 'gestor' || user.email.includes('admin')) {
-                    const adminV = document.getElementById('admin-view');
-                    if(adminV) adminV.classList.remove('hidden-view');
-                    const userD = document.getElementById('user-display');
-                    if(userD) userD.innerText = user.email.split('@')[0].toUpperCase();
+                if(role === 'gestor' || user.email.includes('admin') || user.email.includes('aed@')) {
+                    document.getElementById('admin-view').classList.remove('hidden-view');
+                    document.getElementById('user-display').innerText = user.email.split('@')[0].toUpperCase();
                     carregarDadosAdmin(); nav('dashboard');
                 } else {
-                    const motorV = document.getElementById('motorista-view');
-                    if(motorV) motorV.classList.remove('hidden-view');
-                    const motN = document.getElementById('mot-nome-display');
-                    if(motN) motN.innerText = user.email.split('@')[0].toUpperCase();
+                    document.getElementById('motorista-view').classList.remove('hidden-view');
+                    document.getElementById('mot-nome-display').innerText = user.email.split('@')[0].toUpperCase();
                     iniciarAppMotorista();
                 }
             }
@@ -333,18 +599,27 @@
 
         function fazerLogout() { auth.signOut().then(() => window.location.reload()); }
 
-        function carregarConfig() {
+        // --- 3. CONFIG E MAPAS (ENGENHARIA REAL) ---
+        function carregarConfiguracoesEmpresa() {
             db.ref(`${DB_ROOT}/config`).on('value', snap => {
                 if(snap.exists()){
                     const c = snap.val();
                     GEMINI_API_KEY = c.gemini_key || ""; GOOGLE_MAPS_KEY = c.maps_key || "";
                     CLOUDINARY_CLOUD_NAME = c.cloud_name || ""; CLOUDINARY_UPLOAD_PRESET = c.upload_preset || "";
-                    if(GOOGLE_MAPS_KEY && !mapsLoaded) loadGoogleMaps();
+                    CLOUDINARY_BYTES_USED = c.cloudinary_bytes_used || 0;
+                    
+                    if(document.getElementById('gemini-key')) document.getElementById('gemini-key').value = GEMINI_API_KEY;
+                    if(document.getElementById('maps-key')) document.getElementById('maps-key').value = GOOGLE_MAPS_KEY;
+                    if(document.getElementById('cloud-name')) document.getElementById('cloud-name').value = CLOUDINARY_CLOUD_NAME;
+                    if(document.getElementById('upload-preset')) document.getElementById('upload-preset').value = CLOUDINARY_UPLOAD_PRESET;
+                    if(document.getElementById('cloud-bytes-display')) document.getElementById('cloud-bytes-display').innerText = (CLOUDINARY_BYTES_USED / (1024 * 1024)).toFixed(2) + ' MB';
+                    
+                    if(GOOGLE_MAPS_KEY && !mapsLoaded) loadGoogleMapsScript();
                 }
             });
         }
 
-        function loadGoogleMaps() {
+        function loadGoogleMapsScript() {
             window.initMap = () => { mapsLoaded = true; checkMap('rastreio'); checkMap('rota'); };
             const s = document.createElement('script');
             s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places,geometry&callback=initMap`;
@@ -364,15 +639,16 @@
                 if(!mapRotaObj) {
                     mapRotaObj = new google.maps.Map(document.getElementById('map-rota'), { center: {lat:-20.8, lng:-49.3}, zoom: 7 });
                     directionsService = new google.maps.DirectionsService();
-                    directionsRenderer = new google.maps.DirectionsRenderer({ map: mapRotaObj, polylineOptions: { strokeColor: "#0f172a", strokeWeight: 6 } });
+                    directionsRenderer = new google.maps.DirectionsRenderer({ map: mapRotaObj, polylineOptions: { strokeColor: "#0f172a", strokeWeight: 6, strokeOpacity: 0.8 } });
                 }
             }
         }
 
+        // --- 4. RADAR LOGÍSTICO (INTEGRAÇÃO REAL) ---
         function popularSelectVeiculosRadar() {
             db.ref(`${DB_ROOT}/frota`).once('value', snap => {
-                let h = '<option value="">-- Caminhões em Rota Ativa --</option>';
-                snap.forEach(f => { if(f.val().status === 'Em Rota') h += `<option value="${f.val().placa}">${f.val().placa}</option>`; });
+                let h = '<option value="">-- Modo Manual (Usar campos abaixo) --</option>';
+                snap.forEach(f => { if(f.val().status === 'Em Rota') h += `<option value="${f.val().placa}">Caminhão Operante: ${f.val().placa}</option>`; });
                 const sel = document.getElementById('radar-veiculo');
                 if(sel) sel.innerHTML = h;
             });
@@ -380,9 +656,10 @@
 
         async function preencherRotaVeiculo() {
             const p = document.getElementById('radar-veiculo').value; if(!p) return;
+            document.getElementById('origem-rota').value = "Puxando Satélite...";
             const gps = await db.ref(`${DB_ROOT}/gps_tracking/${p}`).once('value');
             if(gps.exists() && gps.val().status === 'online') document.getElementById('origem-rota').value = `${gps.val().lat}, ${gps.val().lng}`;
-            else document.getElementById('origem-rota').value = "São José do Rio Preto, SP";
+            else document.getElementById('origem-rota').value = "Sede da AED Marcenaria";
             
             const cg = await db.ref(`${DB_ROOT}/cargas`).orderByChild('veiculo').equalTo(p).once('value');
             let d = []; cg.forEach(c => { if(c.val().status === 'Em Rota') d.push(c.val().destino); });
@@ -396,47 +673,57 @@
             const org = document.getElementById('origem-rota').value;
             const dst = document.getElementById('destino-rota').value;
             const btn = document.getElementById('btn-analisar-rota');
-            if(!directionsService || !org || !dst) return;
-            btn.innerHTML = "<div class='loader mx-auto'></div> Mapeando Estrada...";
+            if(!directionsService || !org || !dst) return alert("Erro: Mapas indisponíveis.");
+
+            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Mapeando Estrada...";
             routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
+
             let wpts = [];
             const wData = document.getElementById('destino-rota').dataset.wpts;
             if(wData) JSON.parse(wData).forEach(w => wpts.push({location: w, stopover: true}));
+
             directionsService.route({ origin: org, destination: dst, waypoints: wpts, travelMode: 'DRIVING' }, async (res, status) => {
                 if(status === 'OK') {
                     directionsRenderer.setDirections(res);
                     const poly = new google.maps.Polyline({ path: res.routes[0].overview_path });
+                    
                     const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
                     const geocoder = new google.maps.Geocoder();
                     let detectados = []; let processed = 0; let total = 0;
                     clSnap.forEach(() => total++);
+
                     if(total === 0) return btn.innerHTML = "Base Vazia";
+
                     clSnap.forEach(snap => {
                         const cli = snap.val();
                         geocoder.geocode({ address: `${cli.end}, ${cli.cid}` }, (geoRes, geoStat) => {
                             processed++;
-                            if(geoStat === 'OK') {
+                            if(geoRes && geoStat === 'OK') {
                                 const loc = geoRes[0].geometry.location;
-                                if(google.maps.geometry.poly.isLocationOnEdge(loc, poly, 0.25)) detectados.push({...cli, loc});
+                                // Tolerância de ~20km da estrada (0.2)
+                                if(google.maps.geometry.poly.isLocationOnEdge(loc, poly, 0.2)) detectados.push({...cli, loc});
                             }
-                            if(processed === total) { renderizarRadar(detectados); btn.innerHTML = "Radar Concluído"; }
+                            if(processed === total) { renderizarRadar(detectados); btn.innerHTML = "Varredura Concluída"; }
                         });
                     });
-                } else btn.innerHTML = "Erro de Rota";
+                } else { btn.innerHTML = "Erro de Rota Google"; }
             });
         }
 
         function renderizarRadar(clientes) {
-            const list = document.getElementById('lista-prospeccao');
             const badge = document.getElementById('badge-places');
             if(badge) { badge.innerText = `${clientes.length} DETECTADOS`; badge.classList.remove('hidden'); }
             let h = '';
             clientes.forEach(c => {
                 const marker = new google.maps.Marker({ position: c.loc, map: mapRotaObj, icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png" });
                 routeMarkers.push(marker);
-                h += `<div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm border-l-4 border-amber-400"><h4 class="font-black text-slate-800 text-xs uppercase">${c.nome}</h4><p class="text-[10px] text-slate-500 font-bold">${c.cid}</p><button onclick="abrirPitchIA('${c.nome.replace(/'/g,"")}','${c.cid}','${c.tel}')" class="w-full mt-3 bg-slate-900 text-amber-500 py-2 rounded-lg text-[10px] font-black uppercase">Abrir Pitch IA</button></div>`;
+                h += `<div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm border-l-4 border-amber-400 hover:shadow-lg transition">
+                    <div class="flex justify-between mb-1"><h4 class="font-black text-slate-800 text-xs uppercase">${c.nome}</h4><span class="text-[8px] bg-amber-100 text-amber-600 px-1 rounded font-black">BASE</span></div>
+                    <p class="text-[10px] text-slate-500 font-bold mb-3"><i class='bx bx-map text-red-500'></i> ${c.cid}</p>
+                    <button onclick="abrirPitchIA('${c.nome.replace(/'/g,"")}','${c.cid}','${c.tel}')" class="w-full bg-slate-900 text-amber-500 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition">Abrir Pitch IA</button>
+                </div>`;
             });
-            if(list) list.innerHTML = h || "<p class='text-center p-10 opacity-40 uppercase text-xs font-black'>Nenhum cliente em rota.</p>";
+            document.getElementById('lista-prospeccao').innerHTML = h || "<p class='text-center p-10 opacity-30 font-black text-xs uppercase'>Nenhum cliente base no trajeto.</p>";
         }
 
         function abrirPitchIA(n, l, t) {
@@ -451,56 +738,95 @@
             const txt = document.getElementById('ia-texto'); const load = document.getElementById('ia-loading');
             if(load) load.classList.remove('hidden'); if(txt) txt.value = "";
             const ctx = document.getElementById('ia-contexto').options[document.getElementById('ia-contexto').selectedIndex].text;
-            const prompt = `Aja como o Diretor Comercial da AED Marcenaria. Cliente: "${activePlaceDetails.name}". Local: "${activePlaceDetails.address}". Contexto: Temos um caminhão em rota hoje por lá e oferecemos: ${ctx} com frete isento. Seja profissional e cordial. 2 emojis.`;
+            const prompt = `Aja como o Diretor Comercial da AED Marcenaria. Cliente: "${activePlaceDetails.name}". Local: "${activePlaceDetails.address}". Contexto: Temos um caminhão em rota por lá agora e oferecemos: ${ctx} com 100% de isenção de frete. Seja profissional, persuasivo e induza resposta. Max 3 emojis.`;
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{parts:[{text:prompt}]}]}) });
                 const d = await res.json(); if(txt) txt.value = d.candidates[0].content.parts[0].text;
-            } catch(e) { if(txt) txt.value = "IA Offline."; } finally { if(load) load.classList.add('hidden'); }
+            } catch(e) { if(txt) txt.value = "Falha na conexão IA."; } finally { if(load) load.classList.add('hidden'); }
         }
 
         function enviarWpp() { window.open(`https://wa.me/${document.getElementById('ia-store-phone').value}?text=${encodeURIComponent(document.getElementById('ia-texto').value)}`, '_blank'); }
 
+        // --- 5. GESTÃO ADMINISTRATIVA INTEGRAL (TODOS OS MÓDULOS) ---
         function carregarDadosAdmin() {
+            // Dashboard & Clientes
             db.ref(`${DB_ROOT}/clientes`).on('value', snap => {
                 let h = ''; let count = 0;
-                snap.forEach(c => { count++; const d = c.val(); h += `<tr class="border-b"><td class="p-4 font-black text-xs uppercase">${d.nome}</td><td class="p-4 text-xs">${d.tel}</td><td class="p-4 text-[10px] font-bold uppercase">${d.cid}</td><td class="p-4 text-center"><button onclick="remover('${c.key}','clientes')" class="text-red-300"><i class='bx bx-trash'></i></button></td></tr>`; });
+                snap.forEach(c => { count++; const d = c.val(); h += `<tr class="border-b hover:bg-slate-50 transition"><td class="p-4 font-black text-slate-800 text-xs uppercase">${d.nome}</td><td class="p-4 text-xs font-bold">${d.tel}</td><td class="p-4 text-[10px] font-black uppercase text-slate-500">${d.cid}</td><td class="p-4 text-center"><button onclick="remover('${c.key}','clientes')" class="text-red-300 hover:text-red-600 transition"><i class='bx bx-trash text-lg'></i></button></td></tr>`; });
                 const list = document.getElementById('lista-clientes'); if(list) list.innerHTML = h;
                 const dash = document.getElementById('dash-clientes'); if(dash) dash.innerText = count;
             });
+
+            // Cargas / Romaneios
             db.ref(`${DB_ROOT}/cargas`).on('value', snap => {
                 let h = ''; let ativas = 0;
                 snap.forEach(c => {
                     const d = c.val(); if(d.status === 'Em Rota') ativas++;
                     const stCls = d.status === 'Entregue' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
-                    h += `<tr class="border-b text-xs"><td class="p-4"><span class="px-2 py-1 rounded font-black text-[9px] uppercase ${stCls}">${d.status}</span></td><td class="p-4 font-black">${d.veiculo}<br><span class="text-[8px] text-red-500 uppercase">${d.motorista_nome || ''}</span></td><td class="p-4 font-bold uppercase">${d.destino}</td><td class="p-4 font-medium opacity-60">NFe: ${d.nfe}</td><td class="p-4 text-center"><button onclick="remover('${c.key}','cargas')" class="text-red-300"><i class='bx bx-trash'></i></button></td></tr>`;
+                    h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><span class="px-2 py-1 rounded font-black text-[9px] uppercase ${stCls}">${d.status}</span></td><td class="p-4 font-black tracking-widest text-slate-800">${d.veiculo}<br><span class="text-[8px] text-red-500 uppercase">${d.motorista_nome || ''}</span></td><td class="p-4 font-bold uppercase text-slate-700">${d.destino}</td><td class="p-4 font-medium opacity-60">NFe: ${d.nfe}<br>${d.desc}</td><td class="p-4 text-center"><button onclick="remover('${c.key}','cargas')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
                 });
                 const list = document.getElementById('lista-cargas'); if(list) list.innerHTML = h;
                 const dash = document.getElementById('dash-cargas'); if(dash) dash.innerText = ativas;
             });
+
+            // Frota
             db.ref(`${DB_ROOT}/frota`).on('value', snap => {
                 let count = 0; let h = '';
                 snap.forEach(f => {
                     count++; const d = f.val(); const st = d.status || 'Disponível';
-                    h += `<div class="bg-white p-5 rounded-2xl border shadow-sm"><div class="flex justify-between items-start mb-4"><div><h4 class="font-black text-xl">${d.placa}</h4><p class="text-[10px] uppercase font-bold text-slate-400">${d.modelo}</p></div><span class="text-[8px] font-black uppercase px-2 py-1 rounded ${st==='Disponível'?'bg-green-100 text-green-600':'bg-blue-100 text-blue-600'}">${st}</span></div><button onclick="remover('${f.key}','frota')" class="text-red-300 self-end"><i class='bx bx-trash'></i></button></div>`;
+                    const stCls = st === 'Disponível' ? 'bg-green-100 text-green-600' : (st === 'Em Rota' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600');
+                    h += `<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col hover:shadow-lg transition">
+                        <div class="flex justify-between items-start mb-4"><div><h4 class="font-black text-2xl tracking-widest text-slate-800">${d.placa}</h4><p class="text-[10px] uppercase font-bold text-slate-400">${d.modelo}</p></div><span class="text-[8px] font-black uppercase px-2 py-1 rounded-lg ${stCls}">${st}</span></div>
+                        <div class="flex gap-2 mt-auto"><button onclick="abrirModalManutencao('${d.placa}')" class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-[9px] font-black uppercase tracking-widest">Manutenção</button><button onclick="remover('${f.key}','frota')" class="text-red-300 hover:text-red-600 p-2"><i class='bx bx-trash text-lg'></i></button></div>
+                    </div>`;
                 });
                 const list = document.getElementById('lista-frota'); if(list) list.innerHTML = h;
                 const dash = document.getElementById('dash-frota'); if(dash) dash.innerText = count;
             });
+
+            // Equipe
+            db.ref(`${DB_ROOT}/equipe`).on('value', snap => {
+                let h = '';
+                snap.forEach(e => {
+                    const d = e.val();
+                    h += `<div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-start gap-4 hover:border-red-300 transition relative">
+                        <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-2xl"><i class='bx bxs-user'></i></div>
+                        <div><h4 class="font-black text-slate-800 text-sm uppercase">${d.nome}</h4><p class="text-[9px] text-red-500 font-black uppercase tracking-widest">${d.cargo}</p><p class="text-[10px] text-slate-400 mt-2">${d.email}</p></div>
+                        <button onclick="removerUser('${e.key}')" class="absolute bottom-3 right-3 text-slate-300 hover:text-red-600 transition"><i class='bx bx-user-x text-xl'></i></button>
+                    </div>`;
+                });
+                const list = document.getElementById('lista-equipe'); if(list) list.innerHTML = h;
+            });
+
+            // Oficina
+            db.ref(`${DB_ROOT}/manutencao`).on('value', snap => {
+                let h = '';
+                snap.forEach(m => {
+                    const d = m.val();
+                    h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4 font-bold text-slate-400">${new Date(d.data).toLocaleDateString()}</td><td class="p-4 font-black text-slate-800 tracking-widest">${d.veiculo}</td><td class="p-4 text-slate-600">${d.desc}</td><td class="p-4 text-right font-black text-red-600">R$ ${parseFloat(d.valor).toFixed(2)}</td><td class="p-4 text-center"><button onclick="remover('${m.key}','manutencao')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
+                });
+                const list = document.getElementById('lista-oficina'); if(list) list.innerHTML = h;
+            });
+
+            // Ocorrências
             db.ref(`${DB_ROOT}/ocorrencias`).on('value', snap => {
                 let h = ''; let count = 0;
                 snap.forEach(o => {
                     count++; const d = o.val();
-                    h += `<div class="bg-white p-4 rounded-xl border border-slate-200"><div class="flex justify-between mb-3 border-b pb-2"><p class="text-[10px] font-black uppercase">${d.tipo}</p><p class="text-lg font-black text-red-600">R$ ${parseFloat(d.valor||0).toFixed(2)}</p></div><p class="text-xs font-black uppercase mb-1">${d.veiculo}</p><p class="text-xs italic text-slate-600 mb-2">"${d.desc}"</p><button onclick="remover('${o.key}','ocorrencias')" class="text-red-200 text-xs hover:text-red-500"><i class='bx bx-trash'></i></button></div>`;
+                    const lnk = d.imgUrl ? `<a href="${d.imgUrl}" target="_blank" class="block w-full text-center bg-slate-900 text-white py-2 rounded-lg text-[9px] font-black uppercase tracking-widest mt-4">Ver Recibo</a>` : `<p class="text-[8px] text-slate-300 text-center mt-4">Sem foto</p>`;
+                    h += `<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative"><div class="flex justify-between mb-3 border-b pb-2"><div><p class="text-[8px] text-slate-400 font-bold">${new Date(d.data).toLocaleString()}</p><p class="text-[10px] font-black uppercase tracking-widest text-slate-800">${d.tipo}</p></div><p class="text-xl font-black text-red-600">R$ ${parseFloat(d.valor||0).toFixed(2)}</p></div><p class="text-xs font-black uppercase text-slate-600 mb-1"><i class='bx bxs-truck'></i> ${d.veiculo}</p><p class="text-xs italic text-slate-500 font-medium leading-relaxed">"${d.desc}"</p>${lnk}<button onclick="remover('${o.key}','ocorrencias')" class="absolute top-2 right-2 text-slate-200 hover:text-red-500"><i class='bx bx-x text-lg'></i></button></div>`;
                 });
                 const list = document.getElementById('lista-ocorrencias'); if(list) list.innerHTML = h;
                 const dash = document.getElementById('dash-ocorrencias'); if(dash) dash.innerText = count;
             });
+
+            // Rastreio Satélite
             db.ref(`${DB_ROOT}/gps_tracking`).on('value', snap => {
                 let at = 0; if(snap.exists() && mapRastreioObj) {
                     snap.forEach(g => {
                         const d = g.val(); if(d.status === 'online') {
                             at++; if(vehicleMarkers[g.key]) vehicleMarkers[g.key].setPosition({lat:d.lat, lng:d.lng});
-                            else vehicleMarkers[g.key] = new google.maps.Marker({ position: {lat:d.lat, lng:d.lng}, map: mapRastreioObj, icon: "https://maps.google.com/mapfiles/ms/icons/truck.png" });
+                            else vehicleMarkers[g.key] = new google.maps.Marker({ position: {lat:d.lat, lng:d.lng}, map: mapRastreioObj, title: g.key, icon: "https://maps.google.com/mapfiles/ms/icons/truck.png" });
                         } else { if(vehicleMarkers[g.key]) { vehicleMarkers[g.key].setMap(null); delete vehicleMarkers[g.key]; } }
                     });
                 }
@@ -508,11 +834,23 @@
             });
         }
 
+        // --- 6. SUBMITS E MODAIS (FIX PROTEÇÃO DE NULL) ---
         const loginForm = document.getElementById('login-form');
         if(loginForm) loginForm.onsubmit = async (e) => {
             e.preventDefault();
             try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-pass').value); }
-            catch (err) { document.getElementById('login-error').innerText = "Erro."; }
+            catch (err) { document.getElementById('login-error').innerText = "Erro no Login."; }
+        };
+
+        const formEquipe = document.getElementById('form-equipe');
+        if(formEquipe) formEquipe.onsubmit = async (e) => {
+            e.preventDefault(); const btn = document.getElementById('btn-salvar-equipe'); btn.disabled = true;
+            try {
+                const cred = await secondaryAuth.createUserWithEmailAndPassword(document.getElementById('eq-email').value, document.getElementById('eq-senha').value);
+                await db.ref(`users_roles/${cred.user.uid}`).set({ email: document.getElementById('eq-email').value, role: document.getElementById('eq-cargo').value });
+                await db.ref(`${DB_ROOT}/equipe/${cred.user.uid}`).set({ nome: document.getElementById('eq-nome').value, cargo: document.getElementById('eq-cargo').value, email: document.getElementById('eq-email').value, cnh: document.getElementById('eq-cnh').value });
+                await secondaryAuth.signOut(); fecharModal('modal-equipe'); e.target.reset(); alert("Acesso gerado com sucesso.");
+            } catch (err) { alert("Erro de criação de usuário."); } finally { btn.disabled = false; }
         };
 
         const formCliente = document.getElementById('form-cliente');
@@ -525,7 +863,7 @@
         const formFrota = document.getElementById('form-frota');
         if(formFrota) formFrota.onsubmit = (e) => {
             e.preventDefault();
-            db.ref(`${DB_ROOT}/frota`).push({placa:document.getElementById('fr-placa').value.toUpperCase(), modelo:document.getElementById('fr-modelo').value, status:'Disponível'});
+            db.ref(`${DB_ROOT}/frota`).push({placa:document.getElementById('fr-placa').value.toUpperCase(), modelo:document.getElementById('fr-modelo').value, status:document.getElementById('fr-status').value});
             fecharModal('modal-frota'); e.target.reset();
         };
 
@@ -538,19 +876,6 @@
             fecharModal('modal-carga'); e.target.reset();
         };
 
-        const formOcorrencia = document.getElementById('form-ocorrencia');
-        if(formOcorrencia) formOcorrencia.onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-salvar-ocorrencia'); btn.disabled = true;
-            try {
-                await db.ref(`${DB_ROOT}/ocorrencias`).push({ veiculo: myPlaca||"EXT", motorista: currentUser.email, tipo: document.getElementById('oco-tipo').value, valor: document.getElementById('oco-valor').value, desc: document.getElementById('oco-desc').value, data: Date.now() });
-                fecharModal('modal-ocorrencia'); e.target.reset();
-            } catch(e) {} finally { btn.disabled = false; }
-        };
-
-        const formEquipe = document.getElementById('form-equipe');
-        if(formEquipe) formEquipe.onsubmit = (e) => { e.preventDefault(); alert("Ação restrita ao Console."); };
-
         const formManutencao = document.getElementById('form-manutencao');
         if(formManutencao) formManutencao.onsubmit = (e) => {
             e.preventDefault();
@@ -558,24 +883,46 @@
             fecharModal('modal-manutencao'); e.target.reset();
         };
 
-        function remover(k, p) { if(confirm("Remover?")) db.ref(`${DB_ROOT}/${p}/${k}`).remove(); }
+        const formOcorrencia = document.getElementById('form-ocorrencia');
+        if(formOcorrencia) formOcorrencia.onsubmit = async (e) => {
+            e.preventDefault(); const btn = document.getElementById('btn-salvar-ocorrencia'); btn.disabled = true;
+            try {
+                let img = ""; const f = document.getElementById('oco-foto').files[0];
+                if(f && CLOUDINARY_CLOUD_NAME) {
+                    const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {method:'POST', body:fd});
+                    const d = await res.json(); img = d.secure_url;
+                }
+                await db.ref(`${DB_ROOT}/ocorrencias`).push({ veiculo: myPlaca||"EXT", motorista: currentUser.email, tipo: document.getElementById('oco-tipo').value, valor: document.getElementById('oco-valor').value, desc: document.getElementById('oco-desc').value, imgUrl: img, data: Date.now() });
+                fecharModal('modal-ocorrencia'); e.target.reset(); alert("Relatado com sucesso.");
+            } catch(e) { alert("Falha no envio."); } finally { btn.disabled = false; }
+        };
+
+        function remover(k, p) { if(confirm("Deseja eliminar este registo?")) db.ref(`${DB_ROOT}/${p}/${k}`).remove(); }
+        function removerUser(k) { if(confirm("Deseja bloquear este acesso?")) db.ref(`${DB_ROOT}/equipe/${k}`).remove(); }
         function abrirModal(id) { const m = document.getElementById(id); if(m) { m.classList.remove('hidden'); m.classList.add('flex'); } }
         function fecharModal(id) { const m = document.getElementById(id); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } }
 
         window.abrirModalCarga = () => {
             db.ref(`${DB_ROOT}/frota`).once('value', s => { let h = ''; s.forEach(f => h += `<option value="${f.val().placa}">${f.val().placa}</option>`); const sel = document.getElementById('carga-veiculo'); if(sel) sel.innerHTML = h; });
-            db.ref(`${DB_ROOT}/equipe`).once('value', s => { let h = ''; s.forEach(e => h += `<option value="${e.val().email}">${e.val().nome}</option>`); const sel = document.getElementById('carga-motorista'); if(sel) sel.innerHTML = h; });
-            db.ref(`${DB_ROOT}/clientes`).once('value', s => { let h = ''; s.forEach(c => h += `<option value="${c.val().nome}">${c.val().nome}</option>`); const sel = document.getElementById('carga-cliente'); if(sel) sel.innerHTML = h; });
+            db.ref(`${DB_ROOT}/equipe`).once('value', s => { let h = ''; s.forEach(e => { if(e.val().cargo === 'motorista') h += `<option value="${e.val().email}">${e.val().nome}</option>`; }); const sel = document.getElementById('carga-motorista'); if(sel) sel.innerHTML = h; });
+            db.ref(`${DB_ROOT}/clientes`).once('value', s => { let h = ''; s.forEach(c => h += `<option value="${c.val().nome}">${c.val().nome} (${c.val().cid})</option>`); const sel = document.getElementById('carga-cliente'); if(sel) sel.innerHTML = h; });
             abrirModal('modal-carga');
         };
 
-        function salvarConfig() {
+        window.abrirModalManutencao = (placa = "") => {
+            db.ref(`${DB_ROOT}/frota`).once('value', s => { let h = ''; s.forEach(f => h += `<option value="${f.val().placa}" ${f.val().placa === placa ? 'selected' : ''}>${f.val().placa}</option>`); const sel = document.getElementById('man-veiculo'); if(sel) sel.innerHTML = h; });
+            abrirModal('modal-manutencao');
+        };
+
+        function salvarConfiguracoes() {
             db.ref(`${DB_ROOT}/config`).update({
                 gemini_key: document.getElementById('gemini-key').value, maps_key: document.getElementById('maps-key').value,
                 cloud_name: document.getElementById('cloud-name').value, upload_preset: document.getElementById('upload-preset').value
-            }).then(() => alert("Cofre Atualizado."));
+            }).then(() => alert("Cofre AED Atualizado."));
         }
 
+        // --- 7. APP MOTORISTA (LÓGICA AO VIVO) ---
         let watchId = null; let myPlaca = null;
         function iniciarAppMotorista() {
             db.ref(`${DB_ROOT}/cargas`).on('value', snap => {
@@ -583,28 +930,41 @@
                 const st = document.getElementById('status-escala');
                 if(v) {
                     myPlaca = v.veiculo;
-                    if(st) st.innerHTML = `<p class="font-black text-red-600 text-3xl tracking-widest">${myPlaca}</p>`;
+                    if(st) st.innerHTML = `<div class="bg-blue-600 w-full p-4 rounded-xl shadow-lg"><p class="text-[10px] font-black uppercase mb-1">Carga Atribuída:</p><h4 class="text-3xl font-black text-white italic">${myPlaca}</h4></div>`;
                     const btn = document.getElementById('btn-toggle-gps'); if(btn) btn.disabled = false;
                     const list = document.getElementById('motorista-lista-cargas');
-                    if(list) list.innerHTML = `<div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-2xl"><p class="text-xs text-blue-400 font-bold uppercase mb-1">Descarga em:</p><h4 class="font-black text-white text-lg uppercase mb-3">${v.destino}</h4><button onclick="entregar('${v.id}','${v.veiculo}')" class="w-full bg-green-600 text-white p-4 rounded-xl font-black uppercase text-xs">Confirmar Descarga</button></div>`;
+                    if(list) list.innerHTML = `<div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative overflow-hidden"><div class="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div><p class="text-xs text-blue-400 font-black uppercase mb-1">Destino Final:</p><h4 class="font-black text-white text-xl uppercase mb-3 leading-tight">${v.destino}</h4><p class="text-[10px] text-slate-400 font-bold mb-5 tracking-widest">NFe: ${v.nfe}</p><button onclick="entregarCarga('${v.id}','${v.veiculo}')" class="w-full bg-green-600 hover:bg-green-500 text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs transition active:scale-95 shadow-xl flex justify-center items-center gap-2"><i class='bx bx-check-double text-2xl'></i> Confirmar Entrega</button></div>`;
                     const container = document.getElementById('motorista-cargas-container'); if(container) container.classList.remove('hidden');
-                } else { if(st) st.innerHTML = "Aguardando Escala..."; const container = document.getElementById('motorista-cargas-container'); if(container) container.classList.add('hidden'); }
+                    if(!watchId) { document.getElementById('gps-text').innerText = "INICIAR ROTA"; }
+                } else { 
+                    if(st) st.innerHTML = `<i class='bx bx-coffee-togo text-5xl text-slate-600 mb-2'></i><p class="font-black text-slate-500 uppercase text-xs">Sem escala ativa</p>`; 
+                    const container = document.getElementById('motorista-cargas-container'); if(container) container.classList.add('hidden');
+                    const btn = document.getElementById('btn-toggle-gps'); if(btn) { btn.disabled = true; document.getElementById('gps-text').innerText = "BLOQUEADO"; }
+                    if(watchId) toggleGPS();
+                }
             });
         }
 
         function toggleGPS() {
-            if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; db.ref(`${DB_ROOT}/gps_tracking/${myPlaca}/status`).set('offline'); document.getElementById('gps-pulse').classList.add('hidden'); document.getElementById('gps-text').innerText = "RASTREIO OFF"; }
+            if(watchId) { 
+                navigator.geolocation.clearWatch(watchId); watchId = null; 
+                db.ref(`${DB_ROOT}/gps_tracking/${myPlaca}/status`).set('offline'); 
+                document.getElementById('gps-pulse').classList.add('hidden'); 
+                document.getElementById('gps-text').innerText = "INICIAR ROTA";
+                document.getElementById('gps-icon').className = "bx bx-navigation text-6xl text-slate-500 mb-2";
+            }
             else {
                 watchId = navigator.geolocation.watchPosition(pos => {
-                    db.ref(`${DB_ROOT}/gps_tracking/${myPlaca}`).set({ lat: pos.coords.latitude, lng: pos.coords.longitude, status: 'online', timestamp: Date.now() });
-                }, null, {enableHighAccuracy:true});
+                    db.ref(`${DB_ROOT}/gps_tracking/${myPlaca}`).set({ lat: pos.coords.latitude, lng: pos.coords.longitude, status: 'online', motorista: currentUser.email.split('@')[0].toUpperCase(), timestamp: Date.now() });
+                }, err => alert("Erro ao obter GPS."), {enableHighAccuracy:true});
                 document.getElementById('gps-pulse').classList.remove('hidden'); document.getElementById('gps-pulse').classList.add('gps-active-pulse');
-                document.getElementById('gps-text').innerText = "AO VIVO";
+                document.getElementById('gps-text').innerText = "EM VIAGEM";
+                document.getElementById('gps-icon').className = "bx bx-radar text-7xl text-red-600 mb-2 animate-pulse";
             }
         }
 
-        function entregar(id, p) {
-            if(confirm("Confirmar entrega?")) {
+        function entregarCarga(id, p) {
+            if(confirm("Confirmar que a entrega foi concluída?")) {
                 db.ref(`${DB_ROOT}/cargas/${id}/status`).set('Entregue');
                 db.ref(`${DB_ROOT}/frota`).orderByChild('placa').equalTo(p).once('value', s => s.forEach(f => f.ref.update({status:'Disponível'})));
             }
