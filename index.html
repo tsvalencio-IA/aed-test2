@@ -20,6 +20,11 @@
 </head>
 <body class="text-slate-800 flex h-screen overflow-hidden relative">
 
+    <!-- ================= ASSINATURA DO SISTEMA ================= -->
+    <div class="fixed bottom-1 right-2 text-[9px] font-black text-slate-400/60 uppercase z-[9999] pointer-events-none tracking-widest">
+        Powered by thIAguinho Soluções
+    </div>
+
     <!-- ================= 2. TELA DE LOGIN ================= -->
     <div id="login-view" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-4">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-8 border-red-600 relative overflow-hidden">
@@ -83,10 +88,13 @@
                     <i class='bx bx-receipt text-xl'></i> <span class="font-semibold text-sm">Auditoria & Linha do Tempo</span>
                 </button>
                 <button onclick="window.nav('prospeccao')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 font-bold transition-colors border border-amber-500/30 mt-2" data-target="prospeccao">
-                    <i class='bx bx-radar text-xl'></i> <span class="text-sm">Vendas no Percurso (IA)</span>
+                    <i class='bx bx-radar text-xl'></i> <span class="text-sm">Radar Planejamento IA</span>
                 </button>
 
                 <div class="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-6 mb-2 px-3">Base de Dados</div>
+                <button onclick="window.nav('relatorios')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors border border-indigo-500/30 mb-2" data-target="relatorios">
+                    <i class='bx bx-bar-chart-alt-2 text-xl'></i> <span class="font-semibold text-sm">Painel de Relatórios</span>
+                </button>
                 <button onclick="window.nav('clientes')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors" data-target="clientes">
                     <i class='bx bxs-store text-xl'></i> <span class="font-semibold text-sm">Lojas & Clientes</span>
                 </button>
@@ -132,7 +140,7 @@
                 </div>
             </header>
 
-            <div class="flex-grow overflow-y-auto p-4 sm:p-6 relative">
+            <div class="flex-grow overflow-y-auto p-4 sm:p-6 relative pb-12">
                 
                 <!-- 1. DASHBOARD -->
                 <div id="view-dashboard" class="view-content space-y-6">
@@ -147,8 +155,8 @@
                     <div class="bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-center relative overflow-hidden shadow-2xl">
                         <div class="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
                         <h3 class="text-2xl sm:text-3xl font-black text-white mb-3 uppercase italic tracking-tighter">Logística de Elite AED</h3>
-                        <p class="text-slate-400 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">Gerencie frotas, monitore entregas em tempo real e utilize o Radar IA para otimizar as rotas, preenchendo o frete de retorno com clientes da sua própria base de dados.</p>
-                        <button onclick="window.nav('prospeccao')" class="mt-8 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-xl transition-all hover:scale-105 uppercase text-xs tracking-widest">Ativar Radar Logístico IA</button>
+                        <p class="text-slate-400 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">Gerencie frotas, programe rotas antecipadamente e utilize o Radar IA para otimizar o percurso de longo prazo, preenchendo o frete com clientes da base no raio configurado.</p>
+                        <button onclick="window.nav('prospeccao')" class="mt-8 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-xl transition-all hover:scale-105 uppercase text-xs tracking-widest">Acessar Planejamento Radar</button>
                     </div>
                 </div>
 
@@ -157,7 +165,7 @@
                     <div class="bg-white p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
                         <div>
                             <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Construção de Romaneios</h3>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Adicione notas ao Motorista e depois Atribua a Viatura</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Adicione notas ao Motorista e depois Planeje no Radar</p>
                         </div>
                         <button onclick="window.abrirModalCarga()" class="w-full sm:w-auto bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-lg transition flex justify-center items-center gap-2">
                             <i class='bx bx-plus-circle text-lg'></i> Add Destino à Rota
@@ -182,13 +190,11 @@
                 <!-- 3. OCORRÊNCIAS / AUDITORIA TIMELINE -->
                 <div id="view-ocorrencias" class="view-content hidden-view space-y-4">
                     <div class="bg-white p-4 sm:p-5 rounded-2xl border shadow-sm">
-                        <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Auditoria de Despesas e Entregas</h3>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Linha do Tempo: Entregas Concluídas, Visitas, Pedágios e Combustível na Rota</p>
+                        <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Auditoria e Linha do Tempo</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Monitoramento Nível 3: Motorista → Rotas → Eventos</p>
                     </div>
-                    <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border">
-                        <div id="lista-ocorrencias" class="space-y-6 pb-4">
-                            <!-- Timeline Items inserted by JS -->
-                        </div>
+                    <div id="lista-ocorrencias" class="space-y-6">
+                        <!-- Timeline Items inserted by JS com Blocos Colapsáveis -->
                     </div>
                 </div>
 
@@ -207,53 +213,62 @@
                     </div>
                 </div>
 
-                <!-- 5. RADAR IA INTEGRAL -->
+                <!-- 5. RADAR IA PLANEJAMENTO INTEGRAL -->
                 <div id="view-prospeccao" class="view-content hidden-view flex flex-col gap-6">
                     <div class="flex flex-col lg:flex-row gap-6 w-full">
                         <!-- Esquerda: Configuração e Mapa -->
                         <div class="w-full lg:w-7/12 flex flex-col gap-4 sm:gap-6">
                             <div class="bg-white p-5 sm:p-8 rounded-[2rem] shadow-sm border border-t-8 border-t-amber-500">
                                 <h3 class="font-black text-slate-800 mb-2 uppercase text-sm sm:text-base tracking-tight flex items-center gap-2">
-                                    <i class='bx bx-radar text-amber-500 text-2xl'></i> Radar Transparente IA <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black">V5</span>
+                                    <i class='bx bx-radar text-amber-500 text-2xl'></i> Planejamento Logístico & Radar <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black">V6</span>
                                 </h3>
-                                <p class="text-[10px] sm:text-[11px] text-slate-500 mb-6 font-medium uppercase tracking-tight">O Motor de Varredura usa o GPS Real da viatura no momento do clique. Clientes já entregues ou agendados para hoje são ocultados automaticamente.</p>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 mb-6 font-medium uppercase tracking-tight">Estratégia Preditiva: Trace rotas para seus motoristas (Montando Rota) com semanas de antecedência. O sistema varrerá clientes no corredor configurado em torno do trajeto para preencher o caminhão antes de atribuir a viatura.</p>
                                 
                                 <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 mb-5 shadow-inner">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-widest">1. Selecionar Viatura Logística em Operação</label>
-                                    <select id="radar-veiculo" class="w-full p-4 border rounded-xl text-sm font-black focus:ring-4 focus:ring-amber-500/20 outline-none bg-white transition appearance-none" onchange="window.preencherRotaVeiculo()">
-                                        <option value="">-- Carregando Caminhões em Rota... --</option>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1 tracking-widest">1. Selecionar Motorista para Planejamento</label>
+                                    <select id="radar-motorista" class="w-full p-4 border rounded-xl text-sm font-black focus:ring-4 focus:ring-amber-500/20 outline-none bg-white transition appearance-none" onchange="window.preencherRotaPlanejada()">
+                                        <option value="">-- Carregando Motoristas com Rotas em Construção... --</option>
                                     </select>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                                     <div>
-                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">Origem (GPS Real do Caminhão)</label>
-                                        <input type="text" id="origem-rota" placeholder="Localização do pneu agora..." class="w-full p-4 border rounded-xl text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-amber-500 shadow-inner">
+                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">Origem (Fábrica / Base)</label>
+                                        <input type="text" id="origem-rota" value="São José do Rio Preto, SP" class="w-full p-4 border rounded-xl text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-amber-500 shadow-inner">
                                     </div>
                                     <div>
-                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">Destino Final da Carga</label>
-                                        <input type="text" id="destino-rota" disabled placeholder="Aguardando otimização..." class="w-full p-4 border rounded-xl text-xs font-bold bg-slate-200 text-slate-600 outline-none shadow-inner cursor-not-allowed">
+                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">Destinos Programados</label>
+                                        <input type="text" id="destino-rota" disabled placeholder="Aguardando seleção..." class="w-full p-4 border rounded-xl text-xs font-bold bg-slate-200 text-slate-600 outline-none shadow-inner cursor-not-allowed truncate">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase mb-1.5 ml-1">Raio de Busca (KM)</label>
+                                        <input type="number" id="radar-raio" value="50" min="1" max="1000" class="w-full p-4 border rounded-xl text-xs font-black bg-slate-50 text-amber-600 outline-none focus:ring-2 focus:ring-amber-500 shadow-inner">
                                     </div>
                                 </div>
 
-                                <button onclick="window.analisarRotaClientesBase()" id="btn-analisar-rota" class="w-full bg-slate-950 hover:bg-black transition-all text-amber-400 px-4 py-4 sm:py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex justify-center items-center gap-2 sm:gap-3 tracking-[0.2em] active:scale-95 text-center leading-tight">
-                                    <i class='bx bx-map-pin text-xl animate-pulse'></i> Processar Rota e Iniciar Varredura
-                                </button>
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <button onclick="window.analisarRotaClientesBase()" id="btn-analisar-rota" class="flex-[2] bg-slate-950 hover:bg-black transition-all text-amber-400 px-4 py-4 sm:py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex justify-center items-center gap-2 tracking-[0.1em] active:scale-95 text-center leading-tight">
+                                        <i class='bx bx-map-pin text-xl animate-pulse'></i> Traçar Rota & Iniciar Varredura
+                                    </button>
+                                    <button onclick="window.iniciarDespachoPeloRadar()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-4 sm:py-5 rounded-2xl font-black uppercase text-[10px] sm:text-xs shadow-xl flex justify-center items-center gap-2 active:scale-95 transition-all text-center leading-tight border border-green-500">
+                                        <i class='bx bx-rocket text-lg'></i> Finalizar &<br>Atribuir Viatura
+                                    </button>
+                                </div>
                             </div>
                             
                             <!-- PAINEL DE TELEMETRIA -->
                             <div id="rota-stats" class="hidden grid grid-cols-3 gap-2 bg-slate-900 text-white p-4 sm:p-5 rounded-[1.5rem] shadow-xl border border-slate-700">
                                 <div class="text-center border-r border-slate-700">
-                                    <p class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Distância</p>
+                                    <p class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Distância Total</p>
                                     <p id="stat-dist" class="font-black text-base sm:text-lg text-white">--</p>
                                 </div>
                                 <div class="text-center border-r border-slate-700">
-                                    <p class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Tempo (Trânsito)</p>
+                                    <p class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Tempo Previsto</p>
                                     <p id="stat-tempo" class="font-black text-base sm:text-lg text-amber-400">--</p>
                                 </div>
                                 <div class="text-center flex flex-col items-center justify-center">
-                                    <p class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Sinal</p>
-                                    <span class="bg-green-500/20 text-green-400 text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1 rounded-full border border-green-500/30 animate-pulse mt-1">Ativo</span>
+                                    <p class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Status Motor</p>
+                                    <span class="bg-green-500/20 text-green-400 text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1 rounded-full border border-green-500/30 mt-1">Planejamento</span>
                                 </div>
                             </div>
 
@@ -262,7 +277,7 @@
                                 <div id="map-rota" class="w-full h-full"></div>
                                 <div id="map-rota-overlay" class="absolute inset-0 bg-slate-50/90 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
                                     <i class='bx bx-trip text-6xl sm:text-7xl text-slate-200 mb-3'></i>
-                                    <p class="text-slate-400 font-black uppercase text-[10px] tracking-widest text-center px-4">Radar em Standby</p>
+                                    <p class="text-slate-400 font-black uppercase text-[10px] tracking-widest text-center px-4">Aguardando Traçado</p>
                                 </div>
                             </div>
                         </div>
@@ -274,7 +289,7 @@
                                 <span id="badge-places" class="bg-amber-500 text-slate-950 text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1 rounded-full hidden shadow-inner tracking-widest whitespace-nowrap">Aguardando...</span>
                             </div>
                             <div id="lista-prospeccao" class="p-4 sm:p-6 flex-grow overflow-y-auto space-y-4 bg-slate-50 relative">
-                                <div id="alerta-sucesso" class="absolute top-0 left-0 w-full bg-green-500 text-white text-xs font-black p-2 text-center uppercase tracking-widest hidden z-50 shadow-md">Radar Finalizado!</div>
+                                <div id="alerta-sucesso" class="absolute top-0 left-0 w-full bg-green-500 text-white text-xs font-black p-2 text-center uppercase tracking-widest hidden z-50 shadow-md">Corredor Logístico Mapeado!</div>
                                 <div id="conteudo-lista" class="space-y-4">
                                     <div class="text-center py-24 text-slate-300 flex flex-col items-center opacity-40">
                                         <i class='bx bx-scan text-7xl sm:text-8xl mb-4'></i>
@@ -284,6 +299,11 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- VIEW RELATÓRIOS -->
+                <div id="view-relatorios" class="view-content hidden-view space-y-6">
+                    <!-- Será populado via JS dinamicamente com base nas métricas -->
                 </div>
 
                 <!-- 6. CLIENTES -->
@@ -354,7 +374,7 @@
                                 <tr>
                                     <th class="p-4 sm:p-5">Data / Categoria</th>
                                     <th class="p-4 sm:p-5">Viatura Alvo</th>
-                                    <th class="p-4 sm:p-5">Relatório Técnico</th>
+                                    <th class="p-4 sm:p-5">Relatório / Anexos</th>
                                     <th class="p-4 sm:p-5 text-right">Custo Oficina</th>
                                     <th class="p-4 sm:p-5 text-center">Gestão</th>
                                 </tr>
@@ -378,7 +398,7 @@
                                 <input type="password" id="maps-key" placeholder="AIzaSy..." class="w-full p-3 sm:p-4 border border-slate-200 rounded-xl font-mono text-xs sm:text-sm outline-none focus:border-blue-500 bg-white transition shadow-inner">
                             </div>
                             <div class="bg-slate-50 p-4 sm:p-6 rounded-2xl border-2 border-slate-100">
-                                <label class="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Cloudinary (Upload de Recibos)</label>
+                                <label class="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Cloudinary (Upload de Imagens/Recibos)</label>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <input type="text" id="cloud-name" placeholder="Cloud Name" class="w-full p-3 sm:p-4 border rounded-xl text-xs sm:text-sm bg-white outline-none">
                                     <input type="password" id="upload-preset" placeholder="Upload Preset" class="w-full p-3 sm:p-4 border rounded-xl text-xs sm:text-sm bg-white outline-none">
@@ -388,6 +408,12 @@
                                     <span id="cloud-bytes-display" class="text-[8px] sm:text-[9px] font-black text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100 uppercase tracking-widest">0.00 MB</span>
                                 </div>
                             </div>
+                            <!-- CONFIGURAÇÃO DA TAXA DA PLATAFORMA -->
+                            <div class="bg-emerald-50 p-4 sm:p-6 rounded-2xl border-2 border-emerald-100">
+                                <label class="block text-[9px] sm:text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-2 ml-1">Taxa da Plataforma (%) - Vendas de Oportunidade</label>
+                                <input type="number" id="config-taxa" value="5" step="0.1" class="w-full p-3 sm:p-4 border border-emerald-200 rounded-xl font-mono text-xs sm:text-sm outline-none focus:border-emerald-500 bg-white transition shadow-inner">
+                            </div>
+                            
                             <button onclick="window.salvarConfiguracoes()" class="w-full bg-slate-950 hover:bg-black text-white p-4 sm:p-5 rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] shadow-2xl transition active:scale-95 flex justify-center items-center gap-2 mt-4">
                                 <i class='bx bx-lock-alt text-lg'></i> Criptografar e Salvar no Banco
                             </button>
@@ -439,14 +465,14 @@
                     </div>
                 </div>
 
-                <!-- Seção Entregas -->
+                <!-- Seção Entregas Oficiais Reordenadas -->
                 <div id="motorista-lista-cargas" class="w-full"></div>
 
-                <!-- Seção Radar / Visitas -->
+                <!-- Seção Radar / Visitas Despachadas Pelo Admin -->
                 <div id="motorista-lista-visitas" class="w-full mt-6 sm:mt-8"></div>
 
                 <button onclick="window.abrirModalOcorrencia()" class="w-full bg-slate-800 border border-slate-700 text-white font-black py-5 sm:py-6 rounded-3xl shadow-2xl flex justify-center items-center gap-3 sm:gap-4 active:scale-95 transition-all mt-4 sm:mt-6">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center text-2xl sm:text-3xl"><i class='bx bx-receipt'></i></div>
+                    <div class="w-10 h-10 sm:w-12 h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center text-2xl sm:text-3xl"><i class='bx bx-receipt'></i></div>
                     <div class="text-left">
                         <span class="block text-[10px] sm:text-xs uppercase tracking-widest font-black">Reportar Ocorrência</span>
                         <span class="block text-[7px] sm:text-[8px] text-slate-400 font-normal uppercase mt-0.5 tracking-wider">Combustível, Pedágio ou Avaria</span>
@@ -457,7 +483,8 @@
     </div>
 
     <!-- ================= 5. MODAIS INTEGRATIVOS ================= -->
-    <!-- Modal Atribuir Veículo -->
+    
+    <!-- Modal Atribuir Veículo (LIBERAR ROTA) -->
     <div id="modal-atribuir-veiculo" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] hidden items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border-t-8 border-t-green-500 max-h-[95vh] overflow-y-auto">
             <div class="p-4 sm:p-6 border-b bg-slate-50 flex justify-between items-center">
@@ -484,6 +511,14 @@
                 <div class="flex flex-col sm:flex-row gap-3">
                     <input type="text" id="edit-cli-tel" placeholder="WhatsApp" required class="w-full sm:w-1/2 p-3 sm:p-4 border rounded-xl sm:rounded-2xl text-xs sm:text-sm">
                     <input type="text" id="edit-cli-cidade" placeholder="Cidade (UF)" required class="w-full sm:w-1/2 p-3 sm:p-4 border rounded-xl sm:rounded-2xl text-xs sm:text-sm">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
+                    <input type="text" id="edit-cli-comprador" placeholder="Comprador" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="text" id="edit-cli-dono" placeholder="Dono" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="text" id="edit-cli-pessoa-contato" placeholder="Pessoa de Contato" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="email" id="edit-cli-email-contato" placeholder="E-mail de Contato" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="text" id="edit-cli-telefone-contato" placeholder="Telefone Contato Extra" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none sm:col-span-2">
+                    <textarea id="edit-cli-obs" placeholder="Observações Gerais..." class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none sm:col-span-2 resize-none" rows="2"></textarea>
                 </div>
                 <div class="bg-blue-50 border border-blue-200 p-2 sm:p-3 rounded-xl mb-1 mt-1 sm:mt-2">
                     <p class="text-[8px] sm:text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-1"><i class='bx bx-check-shield'></i> Correção de GPS (Google API)</p>
@@ -545,7 +580,7 @@
             
             <form id="form-carga" class="p-5 sm:p-8 space-y-4 sm:space-y-5">
                 <div>
-                    <label class="block text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1">Motorista Responsável pela Viagem</label>
+                    <label class="block text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1">Motorista (Para Planejamento)</label>
                     <select id="carga-motorista" required class="w-full p-3 sm:p-4 border-2 border-slate-100 rounded-2xl bg-white text-xs sm:text-sm font-black outline-none transition focus:border-red-500"></select>
                 </div>
                 
@@ -558,7 +593,7 @@
                 
                 <textarea id="carga-desc" placeholder="Resumo da Mercadoria (Ex: Chapas de MDF)" rows="3" required class="w-full p-3 sm:p-4 border-2 border-slate-100 rounded-2xl text-xs sm:text-sm resize-none outline-none focus:border-red-500 transition shadow-inner"></textarea>
                 
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs shadow-xl active:scale-95 transition-all mt-4">Salvar Destino no Romaneio</button>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs shadow-xl active:scale-95 transition-all mt-4">Salvar Destino no Planejamento</button>
             </form>
         </div>
     </div>
@@ -566,7 +601,7 @@
     <!-- Modal IA Vendas -->
     <div id="modal-ia" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[250] hidden items-center justify-center p-4">
         <div class="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto flex flex-col">
-            <div class="bg-slate-900 p-4 sm:p-6 text-white flex justify-between items-center border-b-4 border-amber-500 flex-shrink-0">
+            <div class="bg-slate-900 p-4 sm:p-6 text-white flex justify-between items-center border-b-4 border-amber-50 flex-shrink-0">
                 <h3 class="font-black uppercase text-[10px] sm:text-xs tracking-widest flex items-center gap-2 sm:gap-3"><i class='bx bx-brain text-amber-500 text-xl sm:text-2xl'></i> Negociação IA</h3>
                 <button onclick="window.fecharModal('modal-ia')" class="text-slate-400 hover:text-white transition"><i class='bx bx-x text-2xl sm:text-3xl'></i></button>
             </div>
@@ -610,10 +645,15 @@
                 <input type="hidden" id="vis-cliente-nome">
                 
                 <select id="vis-acao" class="w-full p-3 sm:p-4 rounded-xl bg-slate-900 text-white border border-slate-600 outline-none focus:border-amber-500 font-bold text-xs sm:text-sm">
-                    <option value="Venda Realizada (Oportunidade)">Fizemos uma Venda na Parada</option>
+                    <option value="Venda Realizada">Fizemos uma Venda na Parada</option>
                     <option value="Reposição de Mostruário">Reposição de Mostruário</option>
                     <option value="Apenas Visita de Relacionamento">Apenas Visita (Relacionamento)</option>
                     <option value="Cliente Fechado / Ausente">Cliente Fechado / Ausente</option>
+                </select>
+
+                <select id="vis-tipo-venda" class="w-full p-3 sm:p-4 rounded-xl bg-slate-900 text-amber-400 border border-slate-600 outline-none focus:border-amber-500 font-bold text-[10px] sm:text-xs uppercase tracking-widest">
+                    <option value="oportunidade">Venda de Oportunidade (Radar IA)</option>
+                    <option value="programada">Venda Programada (Rota Original)</option>
                 </select>
                 
                 <input type="number" step="0.01" id="vis-valor" placeholder="Valor Vendido R$ (Opcional)" class="w-full p-3 sm:p-4 rounded-xl bg-slate-900 border border-slate-700 text-amber-500 font-black text-base sm:text-lg text-center">
@@ -637,6 +677,15 @@
                 <div class="flex flex-col sm:flex-row gap-3">
                     <input type="text" id="cli-tel" placeholder="WhatsApp" required class="w-full sm:w-1/2 p-3 sm:p-4 border rounded-xl sm:rounded-2xl text-xs sm:text-sm">
                     <input type="text" id="cli-cidade" placeholder="Cidade (UF)" required class="w-full sm:w-1/2 p-3 sm:p-4 border rounded-xl sm:rounded-2xl text-xs sm:text-sm">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
+                    <input type="text" id="cli-comprador" placeholder="Comprador" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="text" id="cli-dono" placeholder="Dono" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="text" id="cli-pessoa-contato" placeholder="Pessoa de Contato" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="email" id="cli-email-contato" placeholder="E-mail de Contato" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none">
+                    <input type="text" id="cli-telefone-contato" placeholder="Telefone Contato Extra" class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none sm:col-span-2">
+                    <textarea id="cli-obs" placeholder="Observações Gerais..." class="w-full p-3 border rounded-xl text-xs bg-slate-50 outline-none sm:col-span-2 resize-none" rows="2"></textarea>
                 </div>
                 
                 <div class="bg-blue-50 border border-blue-200 p-2 sm:p-3 rounded-xl mb-1 mt-1 sm:mt-2">
@@ -672,7 +721,7 @@
         </div>
     </div>
 
-    <!-- Modal Oficina / Manutenção -->
+    <!-- Modal Oficina / Manutenção (ATUALIZADO COM UPLOAD DE FOTOS) -->
     <div id="modal-manutencao" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[200] p-4">
         <div class="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl max-h-[95vh] overflow-y-auto">
             <h3 class="font-black uppercase mb-4 sm:mb-6 text-xs sm:text-sm flex items-center gap-2"><i class='bx bx-wrench text-amber-500'></i> Lançar Serviço de Oficina</h3>
@@ -685,6 +734,18 @@
                     <option value="Lavagem / Estética">Lavagem / Estética</option>
                 </select>
                 <textarea id="man-desc" placeholder="Relatório do Serviço feito..." required class="w-full p-3 sm:p-4 border-2 border-slate-100 rounded-2xl text-xs sm:text-sm resize-none outline-none focus:border-amber-500 h-24 shadow-inner"></textarea>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-400 uppercase ml-1 mb-1">Foto Orçamento</label>
+                        <input type="file" id="man-foto-orcamento" accept="image/*" capture="environment" class="w-full text-[9px] text-slate-400 border border-slate-200 p-2 rounded-xl bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-400 uppercase ml-1 mb-1">Foto da NFe</label>
+                        <input type="file" id="man-foto-nfe" accept="image/*" capture="environment" class="w-full text-[9px] text-slate-400 border border-slate-200 p-2 rounded-xl bg-slate-50">
+                    </div>
+                </div>
+
                 <input type="number" step="0.01" id="man-valor" placeholder="Custo Total (R$)" required class="w-full p-3 sm:p-4 border-2 border-slate-100 rounded-2xl text-amber-600 text-lg font-black text-center outline-none focus:border-amber-500">
                 <button type="submit" id="btn-salvar-manutencao" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 p-4 sm:p-5 rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-widest shadow-xl mt-2 sm:mt-4 active:scale-95 transition-all">Salvar Ordem de Serviço</button>
                 <button type="button" onclick="window.fecharModal('modal-manutencao')" class="w-full text-slate-400 text-[9px] sm:text-[10px] font-black uppercase mt-2 sm:mt-3 py-2">Cancelar</button>
