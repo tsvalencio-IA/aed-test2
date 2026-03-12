@@ -30,6 +30,7 @@ let currentUser = null;
 let currentDriverName = "MOTORISTA"; 
 let GEMINI_API_KEY = ""; let GOOGLE_MAPS_KEY = "";
 let CLOUDINARY_CLOUD_NAME = ""; let CLOUDINARY_UPLOAD_PRESET = ""; let CLOUDINARY_BYTES_USED = 0;
+let PERCENTUAL_SISTEMA = 5;
 
 let mapsLoaded = false; let mapsLoading = false;
 let mapRastreioObj = null, mapRotaObj = null, mapMotoristaObj = null;
@@ -118,13 +119,14 @@ window.nav = function(target) {
         targetView.classList.remove('hidden-view');
         const title = document.getElementById('page-title');
         if(title) {
-            const titles = { 'dashboard':'Dashboard Central', 'cargas':'Romaneios / Rotas', 'rastreio':'Monitoramento Satelital', 'ocorrencias':'Auditoria & Timeline', 'prospeccao':'Radar de Vendas IA', 'clientes':'Base de Lojas', 'equipe':'Equipe & RH', 'frota':'Frota Logística', 'oficina':'Centro de Oficina', 'config':'Configurações APIs' };
+            const titles = { 'dashboard':'Dashboard Central', 'cargas':'Romaneios / Rotas', 'rastreio':'Monitoramento Satelital', 'ocorrencias':'Auditoria & Linha do Tempo', 'prospeccao':'Planejamento IA & Rotas', 'clientes':'Base de Lojas', 'equipe':'Equipe & RH', 'frota':'Frota Logística', 'oficina':'Centro de Oficina', 'config':'Configurações APIs', 'relatorios':'Painel de Relatórios' };
             title.innerHTML = `${titles[target] || target.toUpperCase()}`;
         }
     }
 
     if(target === 'rastreio') window.checkMap('rastreio');
-    if(target === 'prospeccao') { window.checkMap('rota'); window.popularSelectVeiculosRadar(); }
+    if(target === 'prospeccao') { window.checkMap('rota'); window.popularSelectMotoristasRadar(); }
+    if(target === 'relatorios') { window.carregarRelatorios(); }
 };
 
 
@@ -180,11 +182,13 @@ function carregarConfiguracoesAED() {
             GEMINI_API_KEY = c.gemini_key || ""; GOOGLE_MAPS_KEY = c.maps_key || "";
             CLOUDINARY_CLOUD_NAME = c.cloud_name || ""; CLOUDINARY_UPLOAD_PRESET = c.upload_preset || "";
             CLOUDINARY_BYTES_USED = c.cloudinary_bytes_used || 0;
+            PERCENTUAL_SISTEMA = c.percentual_sistema || 5;
             
             if(document.getElementById('gemini-key')) document.getElementById('gemini-key').value = GEMINI_API_KEY;
             if(document.getElementById('maps-key')) document.getElementById('maps-key').value = GOOGLE_MAPS_KEY;
             if(document.getElementById('cloud-name')) document.getElementById('cloud-name').value = CLOUDINARY_CLOUD_NAME;
             if(document.getElementById('upload-preset')) document.getElementById('upload-preset').value = CLOUDINARY_UPLOAD_PRESET;
+            if(document.getElementById('config-taxa')) document.getElementById('config-taxa').value = PERCENTUAL_SISTEMA;
             if(document.getElementById('cloud-bytes-display')) document.getElementById('cloud-bytes-display').innerText = (CLOUDINARY_BYTES_USED / (1024 * 1024)).toFixed(2) + ' MB';
             
             if(GOOGLE_MAPS_KEY && !mapsLoaded) window.carregarGoogleMapsRuntime();
@@ -271,93 +275,127 @@ window.checkMap = function(type) {
 /* ==============================================================
    BLOCO 6: ALGORITMO DO RADAR E INTELIGÊNCIA ARTIFICIAL (GEMINI)
    ============================================================== */
-window.popularSelectVeiculosRadar = function() {
-    db.ref(`${DB_ROOT}/frota`).once('value', snap => {
-        let h = '<option value="">-- Caminhões Operando em Rota --</option>';
-        if(snap.exists()) snap.forEach(f => { if(f.val().status === 'Em Rota') h += `<option value="${f.val().placa}">Viatura: ${f.val().placa}</option>`; });
-        const sel = document.getElementById('radar-veiculo'); if(sel) sel.innerHTML = h;
+window.popularSelectMotoristasRadar = function() {
+    db.ref(`${DB_ROOT}/cargas`).once('value', snap => {
+        let motoristasSet = new Set();
+        let h = '<option value="">-- Selecione o Motorista em Planejamento --</option>';
+        if(snap.exists()) { 
+            snap.forEach(c => { 
+                const val = c.val();
+                if(val.status === 'Montando Rota' && val.motorista_email) {
+                    if(!motoristasSet.has(val.motorista_email)) {
+                        motoristasSet.add(val.motorista_email);
+                        h += `<option value="${val.motorista_email}">${val.motorista_nome}</option>`; 
+                    }
+                } 
+            }); 
+        }
+        const sel = document.getElementById('radar-motorista'); if(sel) sel.innerHTML = h;
     });
 };
 
-window.preencherRotaVeiculo = async function() {
-    const p = document.getElementById('radar-veiculo').value; if(!p) return;
-    document.getElementById('origem-rota').value = "Puxando Satélite...";
-    document.getElementById('destino-rota').value = "Aguardando Varredura...";
+window.preencherRotaPlanejada = async function() {
+    const email = document.getElementById('radar-motorista').value; if(!email) return;
     
-    const gps = await db.ref(`${DB_ROOT}/gps_tracking/${p}`).once('value');
-    if(gps.exists() && gps.val().status === 'online') {
-        document.getElementById('origem-rota').value = `${gps.val().lat}, ${gps.val().lng}`;
+    const snap = await db.ref(`${DB_ROOT}/cargas`).orderByChild('motorista_email').equalTo(email).once('value');
+    let destinosProg = [];
+    snap.forEach(c => {
+        if(c.val().status === 'Montando Rota') {
+            destinosProg.push(c.val().destino);
+        }
+    });
+
+    if(destinosProg.length > 0) {
+        document.getElementById('destino-rota').value = destinosProg.join(' | ');
     } else {
-        document.getElementById('origem-rota').value = "São José do Rio Preto, SP"; 
+        document.getElementById('destino-rota').value = "Nenhum destino na fila."; 
     }
 };
 
+window.iniciarDespachoPeloRadar = function() {
+    const email = document.getElementById('radar-motorista').value;
+    if(!email) return alert("Selecione um motorista para planejar e despachar a rota.");
+    const sel = document.getElementById('radar-motorista');
+    const nome = sel.options[sel.selectedIndex].text;
+    window.abrirModalAtribuirVeiculo(email, nome);
+};
+
+window.adicionarClienteAoRomaneioRadar = function(emailMot, clienteNome, clienteEnd) {
+    window.abrirModalCarga();
+    setTimeout(() => {
+        const selMot = document.getElementById('carga-motorista');
+        const selCli = document.getElementById('carga-cliente');
+        if(selMot) selMot.value = emailMot;
+        if(selCli) {
+            for(let i=0; i<selCli.options.length; i++) {
+                if(selCli.options[i].getAttribute('data-nome') === clienteNome) {
+                    selCli.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    }, 600);
+};
+
 window.analisarRotaClientesBase = async function() {
-    const placa = document.getElementById('radar-veiculo').value;
+    const emailMotorista = document.getElementById('radar-motorista').value;
     const btn = document.getElementById('btn-analisar-rota');
     const alertBox = document.getElementById('alerta-sucesso');
     if(alertBox) alertBox.classList.add('hidden');
     
-    if(!directionsService || !placa) return alert("Erro: Selecione a viatura para iniciar.");
+    if(!directionsService || !emailMotorista) return alert("Erro: Selecione o Motorista em Planejamento primeiro.");
 
-    btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Rastreando Caminhão Agora...";
+    btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Rastreando Entregas do Motorista...";
     routeMarkers.forEach(m => { m.map = null; }); routeMarkers = [];
 
     let originLatLng = null;
-    let originSourceMsg = "Texto Base";
-    
-    const liveGpsSnap = await db.ref(`${DB_ROOT}/gps_tracking/${placa}`).once('value');
-    if(liveGpsSnap.exists() && liveGpsSnap.val().status === 'online') {
-        const lat = liveGpsSnap.val().lat;
-        const lng = liveGpsSnap.val().lng;
-        originLatLng = new google.maps.LatLng(lat, lng);
-        document.getElementById('origem-rota').value = `${lat}, ${lng}`; 
-        originSourceMsg = "Satélite Live";
-    }
-
+    let originSourceMsg = "Endereço Base (Planejamento)";
     const geocoder = new google.maps.Geocoder();
+    const org = document.getElementById('origem-rota').value;
+
+    if(org.includes(',')) {
+        const parts = org.split(',');
+        const latParse = parseFloat(parts[0].trim());
+        const lngParse = parseFloat(parts[1].trim());
+        
+        if(!isNaN(latParse) && !isNaN(lngParse)) {
+            originLatLng = new google.maps.LatLng(latParse, lngParse);
+            originSourceMsg = "Coordenadas Iniciais";
+        }
+    }
     
     if (!originLatLng) {
-        const org = document.getElementById('origem-rota').value;
-        if(org.includes(',')) {
+        btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Validando Origem por Texto...";
+        originLatLng = await new Promise(res => {
             try {
-                const parts = org.split(',');
-                originLatLng = new google.maps.LatLng(parseFloat(parts[0]), parseFloat(parts[1]));
-            } catch(e) {}
-        }
-        if (!originLatLng) {
-            btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Validando Origem por Texto...";
-            originLatLng = await new Promise(res => {
-                try {
-                    geocoder.geocode({ address: org }, (r, s) => {
-                        if (s === 'OK' && r[0]) res(r[0].geometry.location);
-                        else res(null);
-                    });
-                } catch(e) { res(null); }
-            });
-        }
+                geocoder.geocode({ address: org }, (r, s) => {
+                    if (s === 'OK' && r[0]) res(r[0].geometry.location);
+                    else res(null);
+                });
+            } catch(e) { res(null); }
+        });
     }
 
     if(!originLatLng) {
-        btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Processar Rota e Iniciar Varredura";
-        return alert("Erro: Não foi possível localizar o ponto de origem do caminhão no mapa.");
+        btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Traçar Rota & Iniciar Varredura";
+        return alert("Erro: Não foi possível localizar o ponto de origem no Google Maps. Verifique se o endereço inicial está digitado corretamente.");
     }
 
-    const cgSnap = await db.ref(`${DB_ROOT}/cargas`).orderByChild('veiculo').equalTo(placa).once('value');
+    const cgSnap = await db.ref(`${DB_ROOT}/cargas`).orderByChild('motorista_email').equalTo(emailMotorista).once('value');
     const romaneioAtivo = [];
     const destinosParaExcluirDoRadar = [];
 
     cgSnap.forEach(c => { 
         const val = c.val();
-        if(val.status === 'Em Rota' || val.status === 'Montando Rota') {
+        if(val.status === 'Montando Rota' || val.status === 'Em Rota') {
             if(val.destino) destinosParaExcluirDoRadar.push(val.destino.toUpperCase().trim());
+            romaneioAtivo.push({...val, id: c.key}); 
         }
-        if(val.status === 'Em Rota') romaneioAtivo.push({...val, id: c.key}); 
     });
 
     if(romaneioAtivo.length === 0) {
-        btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Processar Rota e Iniciar Varredura";
-        return alert("Nenhum romaneio ativo encontrado para este camião. Se ele já entregou tudo, crie um novo romaneio com a próxima viagem.");
+        btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Traçar Rota & Iniciar Varredura";
+        return alert("Nenhum romaneio em construção para este motorista. Adicione notas a ele em 'Construção de Romaneios' primeiro.");
     }
 
     const clSnap = await db.ref(`${DB_ROOT}/clientes`).once('value');
@@ -402,8 +440,8 @@ window.analisarRotaClientesBase = async function() {
 
     const validDeliveryPoints = deliveryPoints.filter(pt => pt.location && typeof pt.location.lat === 'function');
     if(validDeliveryPoints.length === 0) {
-        btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Processar Rota e Iniciar Varredura";
-        return alert("ERRO CRÍTICO: Nenhum dos destinos desta nota tem GPS válido. Apague as notas do camião, edite os clientes correspondentes salvando com as sugestões do Google e re-envie a viagem.");
+        btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Traçar Rota & Iniciar Varredura";
+        return alert("ERRO CRÍTICO: Nenhum dos destinos desta nota tem GPS válido. Apague as notas do motorista, edite os clientes correspondentes salvando com as sugestões do Google e re-envie a viagem.");
     }
 
     btn.innerHTML = "<div class='loader border-t-amber-400 mx-auto'></div> Roteirizando Algoritmo...";
@@ -421,21 +459,23 @@ window.analisarRotaClientesBase = async function() {
     const finalDestination = validDeliveryPoints[destIndex];
     const waypointsList = validDeliveryPoints.filter((_, i) => i !== destIndex);
 
-    document.getElementById('destino-rota').value = finalDestination.nome + " (Destino de Ancoragem)";
     const cleanWaypoints = waypointsList.map(w => ({ location: w.location, stopover: true }));
 
     const req = {
         origin: originLatLng,
         destination: finalDestination.location,
-        waypoints: cleanWaypoints,
-        optimizeWaypoints: true, 
         travelMode: 'DRIVING'
     };
+
+    if(cleanWaypoints.length > 0) {
+        req.waypoints = cleanWaypoints;
+        req.optimizeWaypoints = true;
+    }
 
     try {
         directionsService.route(req, (res, status) => {
             if (status === 'OK') {
-                window.processarCruzamentoRadial(res, btn, clientesBase, destinosParaExcluirDoRadar, placa, geocoder);
+                window.processarCruzamentoRadial(res, btn, clientesBase, destinosParaExcluirDoRadar, "planejamento_ativo", geocoder);
             } else {
                 btn.innerHTML = "<i class='bx bx-map-pin text-xl'></i> Tentar Novamente";
                 alert("A Google Maps falhou ao traçar esta rota. Erro: " + status);
@@ -446,6 +486,12 @@ window.analisarRotaClientesBase = async function() {
 
 window.processarCruzamentoRadial = function(res, btn, clientesBase, destinosExcluidos, veiculoSelecionado, geocoder) {
     try {
+        // LEITURA DO RAIO DINÂMICO CONFIGURADO PELO GESTOR
+        const inputRaio = document.getElementById('radar-raio');
+        let raioKmUsuario = inputRaio && inputRaio.value ? parseFloat(inputRaio.value) : 50;
+        if (isNaN(raioKmUsuario) || raioKmUsuario <= 0) raioKmUsuario = 50;
+        const RAIO_LOGISTICO_METROS = raioKmUsuario * 1000;
+
         directionsRenderer.setDirections(res);
         
         if (!window.trafficLayer) window.trafficLayer = new google.maps.TrafficLayer();
@@ -474,16 +520,14 @@ window.processarCruzamentoRadial = function(res, btn, clientesBase, destinosExcl
             });
         });
 
-        const RAIO_LOGISTICO_METROS = 15000; 
-
         const densePath = [];
         for (let i = 0; i < detailedPath.length - 1; i++) {
             const p1 = detailedPath[i];
             const p2 = detailedPath[i+1];
             densePath.push(p1);
             const dist = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-            if (dist > 50) { 
-                const fractionSteps = Math.ceil(dist / 50);
+            if (dist > 5000) { 
+                const fractionSteps = Math.ceil(dist / 5000);
                 for (let j = 1; j < fractionSteps; j++) {
                     densePath.push(google.maps.geometry.spherical.interpolate(p1, p2, j / fractionSteps));
                 }
@@ -491,7 +535,7 @@ window.processarCruzamentoRadial = function(res, btn, clientesBase, destinosExcl
         }
         if (detailedPath.length > 0) densePath.push(detailedPath[detailedPath.length - 1]);
 
-        btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Mapeando Todos os Clientes...`;
+        btn.innerHTML = `<div class='loader border-t-amber-400 mx-auto'></div> Mapeando Corredor ${raioKmUsuario}km...`;
         
         const clientesIn = [];
         const clientesOut = []; 
@@ -525,7 +569,7 @@ window.processarCruzamentoRadial = function(res, btn, clientesBase, destinosExcl
         window.renderizarRadarSincrono(clientesIn, clientesOut, clientesErro, veiculoSelecionado);
 
         btn.innerHTML = "<i class='bx bx-check-circle text-xl'></i> Rota Processada com Sucesso";
-        setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Processar Rota e Iniciar Varredura"; }, 3000);
+        setTimeout(() => { btn.innerHTML = "<i class='bx bx-map-pin text-xl animate-pulse'></i> Traçar Rota & Iniciar Varredura"; }, 3000);
         
     } catch(e) {
         console.error("Erro na matemática da rota:", e);
@@ -538,9 +582,16 @@ window.renderizarRadarSincrono = function(clientesIn, clientesOut, clientesErro,
     const badge = document.getElementById('badge-places');
     const alerta = document.getElementById('alerta-sucesso');
     
+    const emailMot = document.getElementById('radar-motorista').value;
+    
+    // LEITURA DO RAIO DINÂMICO PARA OS TEXTOS DA UI
+    const inputRaio = document.getElementById('radar-raio');
+    let raioKmUsuario = inputRaio && inputRaio.value ? parseFloat(inputRaio.value) : 50;
+    if (isNaN(raioKmUsuario) || raioKmUsuario <= 0) raioKmUsuario = 50;
+
     const totalAnalisados = clientesIn.length + clientesOut.length + clientesErro.length;
     if(badge) { 
-        badge.innerText = `${clientesIn.length} NA ROTA | TOTAL BASE: ${totalAnalisados}`; 
+        badge.innerText = `${clientesIn.length} NO CORREDOR ${raioKmUsuario}KM | TOTAL BASE: ${totalAnalisados}`; 
         badge.classList.remove('hidden'); 
     }
     if(alerta) {
@@ -554,7 +605,7 @@ window.renderizarRadarSincrono = function(clientesIn, clientesOut, clientesErro,
     let h = '';
     
     if(clientesIn.length > 0) {
-        h += `<h4 class="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] border-b-2 border-amber-200 pb-2 mb-4 mt-2"><i class='bx bx-radar'></i> Oportunidades na Rota (${clientesIn.length})</h4>`;
+        h += `<h4 class="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] border-b-2 border-amber-200 pb-2 mb-4 mt-2"><i class='bx bx-radar'></i> Oportunidades na Rota (Raio ${raioKmUsuario}km)</h4>`;
         
         for (const c of clientesIn) {
             const rawName = c.nome ? String(c.nome) : "Cliente Desconhecido";
@@ -572,14 +623,17 @@ window.renderizarRadarSincrono = function(clientesIn, clientesOut, clientesErro,
                     <span class="text-[8px] sm:text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black whitespace-nowrap">${distKmVis} KM</span>
                 </div>
                 <p class="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-4 leading-tight relative z-10 line-clamp-2"><i class='bx bx-map text-red-500'></i> ${rawAddress}</p>
-                <button onclick="window.abrirPitchIA('${escN}','${escA}','${telefoneReal}')" class="w-full bg-slate-900 text-amber-500 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center relative z-10"><i class='bx bx-brain text-sm'></i> Abordagem IA</button>
+                <div class="flex flex-col gap-2">
+                    <button onclick="window.abrirPitchIA('${escN}','${escA}','${telefoneReal}')" class="w-full bg-slate-900 text-amber-500 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center relative z-10"><i class='bx bx-brain text-sm'></i> Abordagem IA</button>
+                    <button onclick="window.adicionarClienteAoRomaneioRadar('${emailMot}', '${escN}', '${escA}')" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest active:scale-95 transition flex justify-center gap-2 items-center relative z-10 border border-green-500 shadow-md"><i class='bx bx-plus-circle text-sm'></i> Confirmar na Rota</button>
+                </div>
             </div>`;
         }
     } else {
         h += `
         <div class="bg-slate-100 p-6 rounded-2xl text-center mb-6 border border-slate-200">
             <i class='bx bx-ghost text-4xl text-slate-300 mb-2'></i>
-            <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-widest">Nenhuma loja da base<br>no raio de 15km da rota.</p>
+            <p class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-widest">Nenhuma loja da base<br>no raio de ${raioKmUsuario}km da rota.</p>
         </div>`;
     }
 
@@ -598,7 +652,7 @@ window.renderizarRadarSincrono = function(clientesIn, clientesOut, clientesErro,
     }
 
     if(clientesOut.length > 0) {
-        h += `<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4 mt-6"><i class='bx bx-block'></i> Longe da Rota (${clientesOut.length})</h4>`;
+        h += `<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4 mt-6"><i class='bx bx-block'></i> Longe da Rota (+${raioKmUsuario}km)</h4>`;
         for (const c of clientesOut) {
             const distKm = Math.round(c.dist / 1000);
             const rawName = c.nome ? String(c.nome) : "Cliente";
@@ -729,7 +783,7 @@ function carregarMecanismoAdmin() {
             const d = c.val(); 
             const geoBadge = (d.lat && d.lng) ? `<span class="bg-green-100 text-green-700 text-[8px] px-1 rounded ml-2" title="Coordenadas Salvas">GPS OK</span>` : `<span class="bg-red-100 text-red-700 text-[8px] px-1 rounded ml-2" title="Sem GPS">FALHA GPS</span>`;
             h += `<tr class="hover:bg-slate-50 transition border-b"><td class="p-4 font-black text-slate-800 text-xs uppercase flex items-center">${d.nome} ${geoBadge}</td><td class="p-4 text-xs font-bold text-slate-600">${d.tel}</td><td class="p-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">${d.cid}</td><td class="p-4 text-center whitespace-nowrap">
-                <button onclick="window.editarCliente('${c.key}', '${escapeHtml(d.nome)}', '${escapeHtml(d.tel)}', '${escapeHtml(d.cid)}', '${escapeHtml(d.end || '')}')" class="text-blue-400 hover:text-blue-600 mr-3"><i class='bx bx-edit text-lg'></i></button>
+                <button onclick="window.editarCliente('${c.key}', '${escapeHtml(d.nome)}', '${escapeHtml(d.tel)}', '${escapeHtml(d.cid)}', '${escapeHtml(d.end || '')}', '${escapeHtml(d.comprador || '')}', '${escapeHtml(d.dono || '')}', '${escapeHtml(d.pessoa_contato || '')}', '${escapeHtml(d.email_contato || '')}', '${escapeHtml(d.telefone_contato || '')}', '${escapeHtml(d.obs || '')}')" class="text-blue-400 hover:text-blue-600 mr-3"><i class='bx bx-edit text-lg'></i></button>
                 <button onclick="window.excluir('clientes', '${c.key}')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button>
             </td></tr>`; 
         });
@@ -753,7 +807,7 @@ function carregarMecanismoAdmin() {
                 actBtn = `<button onclick="window.abrirModalAtribuirVeiculo('${escapeHtml(d.motorista_email)}', '${escapeHtml(d.motorista_nome)}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md transition active:scale-95 mb-1 block w-full"><i class='bx bx-play-circle text-sm align-middle'></i> Despachar</button>`;
             }
 
-            h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><span class="px-2 py-1 rounded-lg font-black text-[9px] uppercase ${stCls}">${d.status}</span>${infosEntrega}</td><td class="p-4 font-black tracking-widest text-slate-800 uppercase">${d.motorista_nome || ''}<br><span class="text-[8px] text-red-500 font-bold">Via: ${d.veiculo || 'Aguardando Liberação'}</span></td><td class="p-4 font-bold text-slate-700 uppercase"><i class='bx bxs-map text-red-500'></i> ${d.destino}</td><td class="p-4 text-[9px] text-slate-400 font-medium">NFe: ${d.nfe}<br>${d.desc}</td><td class="p-4 text-center align-middle">${actBtn}<button onclick="window.excluir('cargas', '${c.key}')" class="text-red-300 hover:text-red-600 mt-1"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
+            h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><span class="px-2 py-1 rounded-lg font-black text-[9px] uppercase ${stCls}">${d.status}</span>${infosEntrega}</td><td class="p-4 font-black tracking-widest text-slate-800 uppercase">${d.motorista_nome || ''}<br><span class="text-[8px] text-red-500 font-bold">Via: ${d.veiculo || 'Planejamento Pendente'}</span></td><td class="p-4 font-bold text-slate-700 uppercase"><i class='bx bxs-map text-red-500'></i> ${d.destino}</td><td class="p-4 text-[9px] text-slate-400 font-medium">NFe: ${d.nfe}<br>${d.desc}</td><td class="p-4 text-center align-middle">${actBtn}<button onclick="window.excluir('cargas', '${c.key}')" class="text-red-300 hover:text-red-600 mt-1"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
         });
         const lr = document.getElementById('lista-cargas'); if(lr) lr.innerHTML = h;
         const dr = document.getElementById('dash-cargas'); if(dr) dr.innerText = rCount;
@@ -781,7 +835,11 @@ function carregarMecanismoAdmin() {
     db.ref(`${DB_ROOT}/manutencao`).on('value', snap => {
         let h = ''; snap.forEach(m => {
             const d = m.val();
-            h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${new Date(d.data).toLocaleDateString('pt-BR')}</p><p class="font-bold text-slate-800">${d.tipo}</p></td><td class="p-4 font-black text-slate-800 tracking-widest">${d.veiculo}</td><td class="p-4 text-slate-500 italic text-[11px]">"${d.desc}"</td><td class="p-4 text-right font-black text-red-600">R$ ${parseFloat(d.valor).toFixed(2)}</td><td class="p-4 text-center"><button onclick="window.excluir('manutencao', '${m.key}')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
+            let anexosHtml = '';
+            if(d.imgOrcamento) anexosHtml += `<a href="${d.imgOrcamento}" target="_blank" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-[8px] font-black uppercase shadow-sm inline-block mr-1 hover:bg-indigo-200">Orçamento</a>`;
+            if(d.imgNfe) anexosHtml += `<a href="${d.imgNfe}" target="_blank" class="bg-teal-100 text-teal-700 px-2 py-1 rounded text-[8px] font-black uppercase shadow-sm inline-block hover:bg-teal-200">NFe</a>`;
+            
+            h += `<tr class="border-b text-xs hover:bg-slate-50 transition"><td class="p-4"><p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${new Date(d.data).toLocaleDateString('pt-BR')}</p><p class="font-bold text-slate-800">${d.tipo}</p></td><td class="p-4 font-black text-slate-800 tracking-widest">${d.veiculo}</td><td class="p-4 text-slate-500 italic text-[11px]">"${d.desc}"<br><div class="mt-1">${anexosHtml}</div></td><td class="p-4 text-right font-black text-red-600">R$ ${parseFloat(d.valor).toFixed(2)}</td><td class="p-4 text-center"><button onclick="window.excluir('manutencao', '${m.key}')" class="text-red-300 hover:text-red-600"><i class='bx bx-trash text-lg'></i></button></td></tr>`;
         });
         const lo = document.getElementById('lista-oficina'); if(lo) lo.innerHTML = h;
     });
@@ -792,57 +850,110 @@ function carregarMecanismoAdmin() {
         eventos.sort((a,b) => b.data - a.data); 
 
         let oCount = eventos.length;
-        let agrupadosPorMotorista = {};
+        let grouped = {};
         
         eventos.forEach(d => {
             let mot = d.motorista || "Sem Identificação";
-            if(!agrupadosPorMotorista[mot]) agrupadosPorMotorista[mot] = [];
-            agrupadosPorMotorista[mot].push(d);
+            let rota = d.veiculo || "Sem Rota";
+            if(!grouped[mot]) grouped[mot] = {};
+            if(!grouped[mot][rota]) grouped[mot][rota] = [];
+            grouped[mot][rota].push(d);
         });
 
         let h = ''; 
+        let motIndex = 0;
         
-        for(let mot in agrupadosPorMotorista) {
-            h += `<div class="bg-slate-50 border border-slate-200 rounded-2xl mb-6 overflow-hidden shadow-sm">
-                    <div class="bg-slate-800 p-3 sm:p-4 text-white flex items-center justify-between">
-                        <h4 class="font-black text-xs sm:text-sm uppercase tracking-widest flex items-center gap-2"><i class='bx bx-user-circle text-amber-500 text-xl'></i> Bloco do Motorista: ${mot}</h4>
-                        <span class="bg-slate-700 text-[9px] px-2 py-1 rounded font-bold">${agrupadosPorMotorista[mot].length} Registros</span>
-                    </div>
-                    <div class="p-4 sm:p-6 space-y-6">`;
+        for(let mot in grouped) {
+            motIndex++;
+            let totalMotEvents = Object.values(grouped[mot]).flat().length;
+            let motIdSafe = 'mot_' + mot.replace(/\W/g, '') + motIndex;
             
-            agrupadosPorMotorista[mot].forEach(d => {
-                let corDot = 'bg-slate-500';
-                let corValor = 'text-slate-600';
-                let icone = "<i class='bx bxs-truck'></i>";
-
-                if (d.tipo && d.tipo.includes('Visita')) { corDot = 'bg-amber-500'; corValor = 'text-amber-600'; icone = "<i class='bx bx-briefcase'></i>"; }
-                if (d.tipo && d.tipo.includes('Entrega')) { corDot = 'bg-green-500'; corValor = 'text-green-600'; icone = "<i class='bx bx-check-shield'></i>"; }
-
-                const lnk = d.imgUrl ? `<a href="${d.imgUrl}" target="_blank" class="block w-max px-4 text-center bg-slate-900 text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] mt-3 shadow-lg active:scale-95 transition">Ver Recibo (R$ ${parseFloat(d.valor||0).toFixed(2)})</a>` : ``;
-                const renderValor = (d.valor && parseFloat(d.valor)>0 && !d.tipo.includes('Visita') && !d.tipo.includes('Entrega')) ? `<p class="text-lg font-black ${corValor}">R$ ${parseFloat(d.valor||0).toFixed(2)}</p>` : ((d.valor && parseFloat(d.valor)>0) ? `<p class="text-sm font-black ${corValor}">R$ ${parseFloat(d.valor||0).toFixed(2)}</p>` : '');
-
-                h += `
-                <div class="relative pl-6">
-                    <div class="absolute -left-[5px] top-1 w-3 h-3 rounded-full ${corDot} shadow shadow-slate-300"></div>
-                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm relative hover:shadow-md transition">
-                        <div class="flex justify-between items-start mb-2 border-b border-slate-100 pb-2">
-                            <div>
-                                <p class="text-[9px] sm:text-[10px] font-black text-slate-800 uppercase tracking-widest">${icone} ${d.tipo}</p>
-                                <p class="text-[8px] text-slate-400 font-bold uppercase mt-1 tracking-wider"><i class='bx bx-time-five'></i> ${new Date(d.data).toLocaleString('pt-BR')} &bull; VIA: ${d.veiculo}</p>
-                            </div>
-                            ${renderValor}
+            h += `<div class="bg-white border border-slate-200 rounded-2xl mb-6 shadow-sm overflow-hidden">
+                    <div class="bg-slate-900 hover:bg-black transition p-4 sm:p-5 text-white flex items-center justify-between cursor-pointer" onclick="document.getElementById('${motIdSafe}').classList.toggle('hidden'); this.querySelector('.bx-chevron-down').classList.toggle('rotate-180')">
+                        <h4 class="font-black text-sm sm:text-base uppercase tracking-widest flex items-center gap-3"><i class='bx bxs-user-badge text-blue-500 text-2xl'></i> ${mot}</h4>
+                        <div class="flex items-center gap-4">
+                            <span class="bg-blue-600 text-[10px] px-3 py-1.5 rounded-lg font-black tracking-widest">${totalMotEvents} EVENTOS</span>
+                            <i class='bx bx-chevron-down text-2xl transition-transform duration-300'></i>
                         </div>
-                        <p class="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-inner mt-2">"${d.desc}"</p>
-                        ${lnk}
-                        <button onclick="window.excluir('ocorrencias', '${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition"><i class='bx bx-x text-xl'></i></button>
                     </div>
-                </div>`;
-            });
+                    <div id="${motIdSafe}" class="p-4 sm:p-6 space-y-6 hidden bg-slate-50">`;
+            
+            let rotaIndex = 0;
+            for(let rota in grouped[mot]) {
+                rotaIndex++;
+                let rotaIdSafe = motIdSafe + '_rota_' + rotaIndex;
+                let eventosRota = grouped[mot][rota];
+
+                h += `<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden ml-2 sm:ml-4 border-l-4 border-l-indigo-500">
+                        <div class="bg-slate-100 hover:bg-slate-200 transition p-3 sm:p-4 flex items-center justify-between cursor-pointer border-b border-slate-200" onclick="document.getElementById('${rotaIdSafe}').classList.toggle('hidden'); this.querySelector('.bx-chevron-down').classList.toggle('rotate-180')">
+                            <h5 class="font-black text-xs sm:text-sm text-slate-700 uppercase tracking-widest flex items-center gap-2"><i class='bx bxs-truck text-indigo-500 text-lg'></i> ROTA: ${rota}</h5>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] font-bold text-slate-500">${eventosRota.length} registros</span>
+                                <i class='bx bx-chevron-down text-lg text-slate-500 transition-transform duration-300'></i>
+                            </div>
+                        </div>
+                        <div id="${rotaIdSafe}" class="p-4 sm:p-5 space-y-5 hidden bg-white">`;
+
+                eventosRota.forEach(d => {
+                    let corBorder = 'border-slate-200';
+                    let corIcone = 'text-slate-500';
+                    let icone = "<i class='bx bx-info-circle'></i>";
+                    let bgIcone = "bg-slate-100";
+
+                    if (d.tipo && d.tipo.includes('Visita') && d.desc && d.desc.includes('Venda Realizada')) {
+                        corBorder = 'border-emerald-200'; corIcone = 'text-emerald-600'; icone = "<i class='bx bx-money'></i>"; bgIcone = "bg-emerald-100";
+                    } else if (d.tipo && d.tipo.includes('Visita')) {
+                        corBorder = 'border-amber-200'; corIcone = 'text-amber-600'; icone = "<i class='bx bxs-user-detail'></i>"; bgIcone = "bg-amber-100";
+                    } else if (d.tipo && d.tipo.includes('Entrega')) {
+                        corBorder = 'border-blue-200'; corIcone = 'text-blue-600'; icone = "<i class='bx bx-package'></i>"; bgIcone = "bg-blue-100";
+                    } else if (d.tipo && d.tipo.includes('Combustível')) {
+                        corBorder = 'border-orange-200'; corIcone = 'text-orange-600'; icone = "<i class='bx bxs-gas-pump'></i>"; bgIcone = "bg-orange-100";
+                    } else if (d.tipo && d.tipo.includes('Pedágio')) {
+                        corBorder = 'border-slate-300'; corIcone = 'text-slate-700'; icone = "<i class='bx bx-barrier'></i>"; bgIcone = "bg-slate-200";
+                    }
+
+                    const lnk = d.imgUrl ? `<a href="${d.imgUrl}" target="_blank" class="inline-block mt-3 px-4 py-2 bg-slate-800 hover:bg-black text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-md transition"><i class='bx bx-link-external'></i> Ver Anexo</a>` : ``;
+
+                    let detalhesComissao = '';
+                    if(d.tipoVenda === 'oportunidade' && parseFloat(d.taxa_sistema) > 0) {
+                        detalhesComissao = `<span class="block mt-3 text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded inline-block border border-indigo-100"><i class='bx bx-coin-stack'></i> Taxa Plataforma IA: R$ ${parseFloat(d.taxa_sistema).toFixed(2)}</span>`;
+                    }
+                    
+                    let badgeTipoVenda = '';
+                    if(d.tipoVenda) {
+                        let corBadge = d.tipoVenda === 'oportunidade' ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white';
+                        badgeTipoVenda = `<span class="${corBadge} text-[8px] font-black uppercase px-2 py-0.5 rounded ml-2 tracking-widest shadow-sm">${d.tipoVenda}</span>`;
+                    }
+
+                    const renderValor = (d.valor && parseFloat(d.valor)>0) ? `<div class="text-right flex-shrink-0"><p class="text-sm sm:text-base font-black ${corIcone}">R$ ${parseFloat(d.valor).toFixed(2)}</p></div>` : '';
+
+                    h += `
+                    <div class="flex gap-4 relative">
+                        <div class="w-10 h-10 rounded-full ${bgIcone} ${corIcone} flex items-center justify-center text-xl flex-shrink-0 shadow-sm border ${corBorder} z-10">${icone}</div>
+                        <div class="absolute left-5 top-10 bottom-[-20px] w-0.5 bg-slate-100 z-0 last:hidden"></div>
+                        <div class="flex-grow bg-white border ${corBorder} p-4 rounded-xl shadow-sm hover:shadow-md transition relative">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-widest flex items-center">${d.tipo} ${badgeTipoVenda}</p>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider"><i class='bx bx-time-five'></i> ${new Date(d.data).toLocaleString('pt-BR')}</p>
+                                </div>
+                                ${renderValor}
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 mt-2">"${d.desc}"</p>
+                            ${detalhesComissao}
+                            ${lnk}
+                            <button onclick="window.excluir('ocorrencias', '${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition" title="Excluir Registro"><i class='bx bx-x text-xl'></i></button>
+                        </div>
+                    </div>`;
+                });
+
+                h += `</div></div>`; 
+            }
             
             h += `</div></div>`; 
         }
         
-        const loc = document.getElementById('lista-ocorrencias'); if(loc) loc.innerHTML = h || "<p class='text-xs font-black text-slate-400 uppercase text-center mt-10'>Sem atividade de campo registrada.</p>";
+        const loc = document.getElementById('lista-ocorrencias'); if(loc) loc.innerHTML = h || "<div class='text-center p-10 bg-slate-50 rounded-2xl border border-slate-200'><i class='bx bx-ghost text-5xl text-slate-300 mb-3'></i><p class='text-xs font-black text-slate-400 uppercase tracking-widest'>Nenhuma atividade registrada.</p></div>";
         const doc = document.getElementById('dash-ocorrencias'); if(doc) doc.innerText = oCount;
     });
 
@@ -892,38 +1003,57 @@ if(frmCliente) {
         const tel = document.getElementById('cli-tel').value;
         const cid = document.getElementById('cli-cidade').value;
         const end = document.getElementById('cli-end').value;
+        
+        const comprador = document.getElementById('cli-comprador').value;
+        const dono = document.getElementById('cli-dono').value;
+        const pContato = document.getElementById('cli-pessoa-contato').value;
+        const eContato = document.getElementById('cli-email-contato').value;
+        const tContato = document.getElementById('cli-telefone-contato').value;
+        const obs = document.getElementById('cli-obs').value;
+
+        const payload = { nome, tel, cid, end, comprador, dono, pessoa_contato: pContato, email_contato: eContato, telefone_contato: tContato, obs };
 
         if (clienteGooglePlaceLocation) {
-            db.ref(`${DB_ROOT}/clientes`).push({ nome, tel, cid, end: clienteGooglePlaceLocation.formatted_address, lat: clienteGooglePlaceLocation.lat, lng: clienteGooglePlaceLocation.lng }).then(() => {
+            payload.end = clienteGooglePlaceLocation.formatted_address; payload.lat = clienteGooglePlaceLocation.lat; payload.lng = clienteGooglePlaceLocation.lng;
+            db.ref(`${DB_ROOT}/clientes`).push(payload).then(() => {
                 window.fecharModal('modal-cliente'); btn.innerHTML = oldText; btn.disabled = false; frmCliente.reset(); alert("Loja gravada com sucesso e Coordenadas GPS ativadas!");
             });
         } else if (window.google && google.maps.Geocoder) {
             const geocoder = new google.maps.Geocoder();
             geocoder.geocode({ address: end }, (res, stat) => {
                 if (stat === 'OK' && res[0]) {
-                    db.ref(`${DB_ROOT}/clientes`).push({ nome, tel, cid, end: res[0].formatted_address, lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng() }).then(() => {
+                    payload.end = res[0].formatted_address; payload.lat = res[0].geometry.location.lat(); payload.lng = res[0].geometry.location.lng();
+                    db.ref(`${DB_ROOT}/clientes`).push(payload).then(() => {
                         window.fecharModal('modal-cliente'); btn.innerHTML = oldText; btn.disabled = false; frmCliente.reset(); alert("Loja gravada. O GPS foi capturado automaticamente pelo Google.");
                     });
                 } else {
-                    db.ref(`${DB_ROOT}/clientes`).push({ nome, tel, cid, end }).then(() => {
+                    db.ref(`${DB_ROOT}/clientes`).push(payload).then(() => {
                         window.fecharModal('modal-cliente'); btn.innerHTML = oldText; btn.disabled = false; frmCliente.reset(); alert("Loja gravada apenas como texto, sem GPS exato (Alerta no Radar).");
                     });
                 }
             });
         } else {
-            db.ref(`${DB_ROOT}/clientes`).push({ nome, tel, cid, end }).then(() => {
+            db.ref(`${DB_ROOT}/clientes`).push(payload).then(() => {
                 window.fecharModal('modal-cliente'); btn.innerHTML = oldText; btn.disabled = false; frmCliente.reset(); alert("Loja gravada.");
             });
         }
     };
 }
 
-window.editarCliente = function(id, nome, tel, cid, end) {
+window.editarCliente = function(id, nome, tel, cid, end, comprador, dono, pContato, eContato, tContato, obs) {
     document.getElementById('edit-cli-id').value = id;
     document.getElementById('edit-cli-nome').value = nome;
     document.getElementById('edit-cli-tel').value = tel;
     document.getElementById('edit-cli-cidade').value = cid;
     document.getElementById('edit-cli-end').value = end;
+    
+    document.getElementById('edit-cli-comprador').value = comprador || '';
+    document.getElementById('edit-cli-dono').value = dono || '';
+    document.getElementById('edit-cli-pessoa-contato').value = pContato || '';
+    document.getElementById('edit-cli-email-contato').value = eContato || '';
+    document.getElementById('edit-cli-telefone-contato').value = tContato || '';
+    document.getElementById('edit-cli-obs').value = obs || '';
+
     editClienteGooglePlaceLocation = null;
     window.abrirModal('modal-edit-cliente');
 };
@@ -941,25 +1071,36 @@ if(frmEditCliente) {
         const cid = document.getElementById('edit-cli-cidade').value;
         const end = document.getElementById('edit-cli-end').value;
 
+        const comprador = document.getElementById('edit-cli-comprador').value;
+        const dono = document.getElementById('edit-cli-dono').value;
+        const pContato = document.getElementById('edit-cli-pessoa-contato').value;
+        const eContato = document.getElementById('edit-cli-email-contato').value;
+        const tContato = document.getElementById('edit-cli-telefone-contato').value;
+        const obs = document.getElementById('edit-cli-obs').value;
+
+        const payload = { nome, tel, cid, end, comprador, dono, pessoa_contato: pContato, email_contato: eContato, telefone_contato: tContato, obs };
+
         if (editClienteGooglePlaceLocation) {
-            db.ref(`${DB_ROOT}/clientes/${id}`).update({ nome, tel, cid, end: editClienteGooglePlaceLocation.formatted_address, lat: editClienteGooglePlaceLocation.lat, lng: editClienteGooglePlaceLocation.lng }).then(() => {
+            payload.end = editClienteGooglePlaceLocation.formatted_address; payload.lat = editClienteGooglePlaceLocation.lat; payload.lng = editClienteGooglePlaceLocation.lng;
+            db.ref(`${DB_ROOT}/clientes/${id}`).update(payload).then(() => {
                 window.fecharModal('modal-edit-cliente'); btn.innerHTML = oldText; btn.disabled = false; alert("Loja editada com GPS atualizado perfeitamente.");
             });
         } else if (window.google && google.maps.Geocoder) {
             const geocoder = new google.maps.Geocoder();
             geocoder.geocode({ address: end }, (res, stat) => {
                 if (stat === 'OK' && res[0]) {
-                    db.ref(`${DB_ROOT}/clientes/${id}`).update({ nome, tel, cid, end: res[0].formatted_address, lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng() }).then(() => {
+                    payload.end = res[0].formatted_address; payload.lat = res[0].geometry.location.lat(); payload.lng = res[0].geometry.location.lng();
+                    db.ref(`${DB_ROOT}/clientes/${id}`).update(payload).then(() => {
                         window.fecharModal('modal-edit-cliente'); btn.innerHTML = oldText; btn.disabled = false; alert("Loja atualizada via texto com GPS recapturado pelo Google.");
                     });
                 } else {
-                    db.ref(`${DB_ROOT}/clientes/${id}`).update({ nome, tel, cid, end }).then(() => {
+                    db.ref(`${DB_ROOT}/clientes/${id}`).update(payload).then(() => {
                         window.fecharModal('modal-edit-cliente'); btn.innerHTML = oldText; btn.disabled = false; alert("Loja editada, mas o novo endereço não gerou GPS automático. Edite de novo se ela falhar no Radar.");
                     });
                 }
             });
         } else {
-            db.ref(`${DB_ROOT}/clientes/${id}`).update({ nome, tel, cid, end }).then(() => {
+            db.ref(`${DB_ROOT}/clientes/${id}`).update(payload).then(() => {
                 window.fecharModal('modal-edit-cliente'); btn.innerHTML = oldText; btn.disabled = false; alert("Dados de texto da Loja atualizados.");
             });
         }
@@ -1026,18 +1167,52 @@ window.abrirModalManutencao = function(placa = '') {
     window.abrirModal('modal-manutencao');
 };
 
+async function uploadToCloudinary(fileInputId) {
+    const fileInput = document.getElementById(fileInputId);
+    if (!fileInput || fileInput.files.length === 0) return "";
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) return "";
+    
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', 'aed_logistica_oficina');
+    
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, { method: 'POST', body: formData });
+    if (!response.ok) throw new Error("Falha no servidor de imagens.");
+    const data = await response.json();
+    await db.ref(`${DB_ROOT}/config/cloudinary_bytes_used`).set(CLOUDINARY_BYTES_USED + data.bytes);
+    return data.secure_url;
+}
+
 const frmMan = document.getElementById('form-manutencao');
 if(frmMan) {
     frmMan.onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btn-salvar-manutencao');
-        const oldText = btn.innerHTML; btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Lançando..."; btn.disabled = true;
+        const oldText = btn.innerHTML; btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Processando Imagens e Salvando..."; btn.disabled = true;
         try {
+            let linkOrcamento = "";
+            let linkNfe = "";
+
+            if(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+                linkOrcamento = await uploadToCloudinary('man-foto-orcamento');
+                linkNfe = await uploadToCloudinary('man-foto-nfe');
+            } else {
+                const imgO = document.getElementById('man-foto-orcamento');
+                const imgN = document.getElementById('man-foto-nfe');
+                if((imgO && imgO.files.length > 0) || (imgN && imgN.files.length > 0)) {
+                    alert("Atenção: A chave do Cloudinary não está configurada no Cofre. As imagens não puderam ser anexadas ao relatório.");
+                }
+            }
+
             await db.ref(`${DB_ROOT}/manutencao`).push({
                 veiculo: document.getElementById('man-veiculo').value.toUpperCase(),
                 tipo: document.getElementById('man-tipo').value,
                 desc: document.getElementById('man-desc').value,
                 valor: document.getElementById('man-valor').value || 0,
+                imgOrcamento: linkOrcamento,
+                imgNfe: linkNfe,
                 data: Date.now()
             });
             
@@ -1170,7 +1345,13 @@ if(frmAtrVeiculo) {
 
 window.salvarConfiguracoes = function() {
     const mk = document.getElementById('maps-key').value;
-    db.ref(`${DB_ROOT}/config`).update({ gemini_key: document.getElementById('gemini-key').value, maps_key: mk, cloud_name: document.getElementById('cloud-name').value, upload_preset: document.getElementById('upload-preset').value }).then(() => { alert("As chaves de API foram encriptadas e salvas na Nuvem."); if(mk) window.carregarGoogleMapsRuntime(); }); 
+    db.ref(`${DB_ROOT}/config`).update({ 
+        gemini_key: document.getElementById('gemini-key').value, 
+        maps_key: mk, 
+        cloud_name: document.getElementById('cloud-name').value, 
+        upload_preset: document.getElementById('upload-preset').value,
+        percentual_sistema: parseFloat(document.getElementById('config-taxa').value || 5)
+    }).then(() => { alert("As chaves e parâmetros financeiros foram salvos com sucesso."); if(mk) window.carregarGoogleMapsRuntime(); }); 
 };
 
 // CRIAÇÃO E DELEÇÃO DE USUÁRIOS/DADOS
@@ -1321,22 +1502,30 @@ window.processarEExibirMapaMotorista = async function(romaneio, placa) {
         
         if(!directionsService) directionsService = new google.maps.DirectionsService();
         
-        directionsService.route({
+        // ESTRUTURA BLINDADA PARA EVITAR INVALID_REQUEST NO MOTORISTA TAMBÉM
+        const routeReq = {
             origin: new google.maps.LatLng(originLatLng.lat, originLatLng.lng),
             destination: finalDestination.location,
-            waypoints: waypointsList,
-            optimizeWaypoints: true, 
             travelMode: 'DRIVING'
-        }, (res, status) => {
+        };
+
+        if (waypointsList.length > 0) {
+            routeReq.waypoints = waypointsList;
+            routeReq.optimizeWaypoints = true;
+        }
+
+        directionsService.route(routeReq, (res, status) => {
             if(overlay) overlay.classList.add('hidden');
             
             if(status === 'OK' && dirRendererMot) {
                 dirRendererMot.setDirections(res);
 
-                const order = res.routes[0].waypoint_order;
-                const rawWaypoints = validDeliveryPoints.filter((_, i) => i !== destIndex);
-                
-                const sortedPoints = order.map(index => rawWaypoints[index]);
+                let sortedPoints = [];
+                if(res.routes[0].waypoint_order && res.routes[0].waypoint_order.length > 0) {
+                    const order = res.routes[0].waypoint_order;
+                    const rawWaypoints = validDeliveryPoints.filter((_, i) => i !== destIndex);
+                    sortedPoints = order.map(index => rawWaypoints[index]);
+                }
                 sortedPoints.push(finalDestination);
 
                 let cartoesCarga = '';
@@ -1463,16 +1652,26 @@ if(frmVisita) {
 
         try {
             const acao = document.getElementById('vis-acao').value;
-            const valor = document.getElementById('vis-valor').value || 0;
+            const tipoVendaSelect = document.getElementById('vis-tipo-venda');
+            const tipoVenda = tipoVendaSelect ? tipoVendaSelect.value : 'oportunidade';
+            const valor = parseFloat(document.getElementById('vis-valor').value || 0);
             const obs = document.getElementById('vis-obs').value;
             const cliNome = document.getElementById('vis-cliente-nome').value;
             const cliId = document.getElementById('vis-cliente-id').value;
+
+            // MONETIZAÇÃO ATUALIZADA
+            let taxaSistema = 0;
+            if (acao === 'Venda Realizada' && tipoVenda === 'oportunidade' && valor > 0) {
+                taxaSistema = valor * (PERCENTUAL_SISTEMA / 100);
+            }
 
             await db.ref(`${DB_ROOT}/ocorrencias`).push({ 
                 veiculo: veiculoDoRomaneio || "Indeterminado", 
                 motorista: currentDriverName, 
                 tipo: `Visita Comercial`, 
+                tipoVenda: tipoVenda,
                 valor: valor, 
+                taxa_sistema: taxaSistema,
                 desc: `CLIENTE: ${cliNome} | AÇÃO: ${acao} | OBS: ${obs}`, 
                 imgUrl: "", 
                 data: Date.now() 
@@ -1656,3 +1855,116 @@ if(frmOco) {
         } catch (err) { alert("Falha Sistêmica: " + err.message); } finally { btn.innerHTML = originalBtnHtml; btn.disabled = false; }
     };
 }
+
+
+/* ==============================================================
+   BLOCO 11: MÓDULO DE RELATÓRIOS E INDICADORES
+   ============================================================== */
+window.carregarRelatorios = async function() {
+    const relDiv = document.getElementById('view-relatorios');
+    if (!relDiv || relDiv.classList.contains('hidden-view')) return;
+
+    relDiv.innerHTML = `<div class='loader mx-auto my-10 border-t-slate-800'></div><p class='text-center text-xs font-black uppercase text-slate-500 tracking-widest'>Processando Datalake Logístico...</p>`;
+
+    try {
+        const [snapCargas, snapOco, snapMan] = await Promise.all([
+            db.ref(`${DB_ROOT}/cargas`).once('value'),
+            db.ref(`${DB_ROOT}/ocorrencias`).once('value'),
+            db.ref(`${DB_ROOT}/manutencao`).once('value')
+        ]);
+
+        let entregasPorMot = {};
+        let viagensRealizadas = 0;
+        let vendasProgramadas = 0;
+        let vendasOportunidade = 0;
+        let totalVendidoProgramado = 0;
+        let totalVendidoOportunidade = 0;
+        let comissoesSistema = 0;
+        let despesasPorVeiculo = {};
+        let totalVisitas = 0;
+
+        if(snapCargas.exists()) {
+            snapCargas.forEach(c => {
+                const d = c.val();
+                if(d.status === 'Entregue') {
+                    viagensRealizadas++;
+                    const mot = d.motorista_nome || d.entregue_por || "Desconhecido";
+                    entregasPorMot[mot] = (entregasPorMot[mot] || 0) + 1;
+                }
+            });
+        }
+
+        if(snapOco.exists()) {
+            snapOco.forEach(o => {
+                const d = o.val();
+                
+                if(d.tipo === 'Visita Comercial') {
+                    totalVisitas++;
+                    if(d.desc && d.desc.includes('Venda Realizada')) {
+                        if(d.tipoVenda === 'programada') {
+                            vendasProgramadas++;
+                            totalVendidoProgramado += parseFloat(d.valor || 0);
+                        } else {
+                            vendasOportunidade++;
+                            totalVendidoOportunidade += parseFloat(d.valor || 0);
+                            comissoesSistema += parseFloat(d.taxa_sistema || 0);
+                        }
+                    }
+                }
+                
+                if(d.tipo === 'Combustível' || d.tipo === 'Pedágio' || d.tipo === 'Oficina' || d.tipo === 'Almoço') {
+                    const vec = d.veiculo || "Indeterminado";
+                    despesasPorVeiculo[vec] = (despesasPorVeiculo[vec] || 0) + parseFloat(d.valor || 0);
+                }
+            });
+        }
+
+        if(snapMan.exists()) {
+            snapMan.forEach(m => {
+                const d = m.val();
+                const vec = d.veiculo || "Indeterminado";
+                despesasPorVeiculo[vec] = (despesasPorVeiculo[vec] || 0) + parseFloat(d.valor || 0);
+            });
+        }
+
+        let htmlMot = Object.entries(entregasPorMot).sort((a,b) => b[1] - a[1]).map(([m, qtd]) => `<div class="flex justify-between border-b border-slate-100 pb-2"><span class="text-[10px] uppercase font-bold text-slate-600">${m}</span><span class="text-xs font-black bg-slate-100 px-2 py-0.5 rounded">${qtd}</span></div>`).join('');
+        let htmlDesp = Object.entries(despesasPorVeiculo).sort((a,b) => b[1] - a[1]).map(([v, val]) => `<div class="flex justify-between border-b border-slate-100 pb-2"><span class="text-[10px] uppercase font-bold text-slate-600">${v}</span><span class="text-xs font-black text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded">R$ ${val.toFixed(2)}</span></div>`).join('');
+
+        relDiv.innerHTML = `
+            <div class="bg-white p-6 rounded-2xl shadow-sm border mb-6">
+                <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg mb-4 flex items-center gap-2"><i class='bx bx-pie-chart-alt-2 text-indigo-500'></i> DRE Logístico e Comercial</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Entregas e Visitas</p>
+                        <p class="text-2xl font-black text-slate-800 mt-1">${viagensRealizadas} <span class="text-[10px] font-bold text-slate-400 align-middle">Ent.</span> | ${totalVisitas} <span class="text-[10px] font-bold text-slate-400 align-middle">Vis.</span></p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                        <p class="text-[9px] text-blue-600 font-black uppercase tracking-widest">Vendas Programadas</p>
+                        <p class="text-2xl font-black text-blue-700 mt-1">${vendasProgramadas} <span class="text-xs">/ R$ ${totalVendidoProgramado.toFixed(2)}</span></p>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                        <p class="text-[9px] text-amber-600 font-black uppercase tracking-widest">Vendas Oportunidade</p>
+                        <p class="text-2xl font-black text-amber-700 mt-1">${vendasOportunidade} <span class="text-xs">/ R$ ${totalVendidoOportunidade.toFixed(2)}</span></p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+                        <p class="text-[9px] text-indigo-600 font-black uppercase tracking-widest">Taxas da Plataforma (${PERCENTUAL_SISTEMA}%)</p>
+                        <p class="text-2xl font-black text-indigo-700 mt-1">R$ ${comissoesSistema.toFixed(2)}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <h4 class="font-black text-slate-800 uppercase text-xs mb-4 border-b pb-2 flex items-center gap-2"><i class='bx bxs-package text-slate-400'></i> Ranking de Entregas por Motorista</h4>
+                    <div class="space-y-3">${htmlMot || '<p class="text-[10px] uppercase font-bold text-slate-400">Nenhum dado registrado.</p>'}</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <h4 class="font-black text-slate-800 uppercase text-xs mb-4 border-b pb-2 flex items-center gap-2"><i class='bx bx-money text-red-400'></i> Despesas Globais por Veículo (Rota + Oficina)</h4>
+                    <div class="space-y-3">${htmlDesp || '<p class="text-[10px] uppercase font-bold text-slate-400">Nenhum dado registrado.</p>'}</div>
+                </div>
+            </div>
+        `;
+    } catch(e) {
+        relDiv.innerHTML = `<div class="bg-red-50 text-red-600 font-bold text-[10px] uppercase p-4 rounded-xl shadow-inner border border-red-200"><i class='bx bx-error text-lg align-middle'></i> Erro na leitura do Datalake: ${e.message}</div>`;
+    }
+};
